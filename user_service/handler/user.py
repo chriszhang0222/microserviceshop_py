@@ -1,17 +1,18 @@
 import grpc
 import time
 from datetime import date
+from loguru import logger
 from user_service.proto import user_pb2, user_pb2_grpc
 from user_service.model.models import User
 
 
 class UserServicer(user_pb2_grpc.UserServicer):
+    @logger.catch
     def GetUserList(self, request: user_pb2.PageInfo, context):
         users = User.select()
         rsp = user_pb2.UserListResponse()
         rsp.total = users.count()
         start = 0
-        page = 1
         per_page_numbers = 10
         if request.pSize:
             per_page_numbers = request.pSize
