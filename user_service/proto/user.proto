@@ -46,7 +46,7 @@ message UserInfoResponse{
   string password = 2;
   string mobile = 3;
   string nickName = 4;
-  string birthDay = 5;
+  uint64 birthDay = 5;
   string gender = 6;
   int32 role = 7;
 }

@@ -29,6 +29,3 @@ class User(BaseModel):
     gender = CharField(max_length=6, null=True, choices=GENDER_CHOICES)
     role = IntegerField(default=1, choices=ROLE_CHOICES)
 
-
-if __name__ == "__main__":
-    setting.DB.create_tables([User])
