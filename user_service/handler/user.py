@@ -6,6 +6,8 @@ from user_service.proto import user_pb2, user_pb2_grpc
 from user_service.model.models import User
 from peewee import DoesNotExist
 from passlib.hash import pbkdf2_sha256
+from google.protobuf import empty_pb2
+
 
 class UserServicer(user_pb2_grpc.UserServicer):
 
@@ -42,8 +44,23 @@ class UserServicer(user_pb2_grpc.UserServicer):
         user.save()
         return self.convert_user_to_rsp(user)
 
-    def UpdateUser(self, request, context):
-        return super().UpdateUser(request, context)
+    @logger.catch
+    def UpdateUser(self, request: user_pb2.UpdateUserInfo, context):
+        try:
+            user = User.get(User.id == request.id)
+            if request.nickName is not None and request.nickName != '':
+                user.nick_name = request.nickName
+            if request.gender is not None and request.gender != '':
+                user.gender = request.gender
+            if request.birthday is not None and request.birthday != 0:
+                user.birthday = date.fromtimestamp(request.birthday)
+            user.save()
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("User does not exist")
+            return empty_pb2.Empty()
+
 
     @logger.catch
     def GetUserList(self, request: user_pb2.PageInfo, context):
@@ -74,7 +91,6 @@ class UserServicer(user_pb2_grpc.UserServicer):
             context.set_details("User does not exist")
             return user_pb2.UserInfoResponse()
 
-
     @logger.catch
     def GetUserById(self, request: user_pb2.IdRequest, context):
         try:
@@ -86,10 +102,3 @@ class UserServicer(user_pb2_grpc.UserServicer):
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("User does not exist")
             return user_pb2.UserInfoResponse()
-
-
-
-
-
-
-
