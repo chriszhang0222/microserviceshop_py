@@ -102,3 +102,8 @@ class UserServicer(user_pb2_grpc.UserServicer):
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("User does not exist")
             return user_pb2.UserInfoResponse()
+
+    @logger.catch
+    def CheckPassword(self, request:user_pb2.IdRequest, context):
+        return user_pb2.checkResponse(success=pbkdf2_sha256.verify(request.password, request.encryptedPassword))
+

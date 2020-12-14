@@ -20,11 +20,82 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z\007.;proto',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\nuser.proto\x1a\x1bgoogle/protobuf/empty.proto\"%\n\x08PageInfo\x12\n\n\x02pn\x18\x01 \x01(\r\x12\r\n\x05pSize\x18\x02 \x01(\r\"\x1f\n\rMobileRequest\x12\x0e\n\x06mobile\x18\x01 \x01(\t\"\x17\n\tIdRequest\x12\n\n\x02id\x18\x01 \x01(\x03\"D\n\x0e\x43reateUserInfo\x12\x10\n\x08nickName\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0e\n\x06mobile\x18\x03 \x01(\t\"P\n\x0eUpdateUserInfo\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x10\n\x08nickName\x18\x02 \x01(\t\x12\x0e\n\x06gender\x18\x03 \x01(\t\x12\x10\n\x08\x62irthDay\x18\x04 \x01(\x04\"B\n\x10UserListResponse\x12\r\n\x05total\x18\x01 \x01(\x05\x12\x1f\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x11.UserInfoResponse\"\x82\x01\n\x10UserInfoResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0e\n\x06mobile\x18\x03 \x01(\t\x12\x10\n\x08nickName\x18\x04 \x01(\t\x12\x10\n\x08\x62irthDay\x18\x05 \x01(\x04\x12\x0e\n\x06gender\x18\x06 \x01(\t\x12\x0c\n\x04role\x18\x07 \x01(\x05\x32\x80\x02\n\x04User\x12+\n\x0bGetUserList\x12\t.PageInfo\x1a\x11.UserListResponse\x12\x34\n\x0fGetUserByMobile\x12\x0e.MobileRequest\x1a\x11.UserInfoResponse\x12,\n\x0bGetUserById\x12\n.IdRequest\x1a\x11.UserInfoResponse\x12\x30\n\nCreateUser\x12\x0f.CreateUserInfo\x1a\x11.UserInfoResponse\x12\x35\n\nUpdateUser\x12\x0f.UpdateUserInfo\x1a\x16.google.protobuf.EmptyB\tZ\x07.;protob\x06proto3'
+  serialized_pb=b'\n\nuser.proto\x1a\x1bgoogle/protobuf/empty.proto\"@\n\x11PasswordCheckInfo\x12\x10\n\x08password\x18\x01 \x01(\t\x12\x19\n\x11\x65ncryptedPassword\x18\x02 \x01(\t\" \n\rcheckResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"%\n\x08PageInfo\x12\n\n\x02pn\x18\x01 \x01(\r\x12\r\n\x05pSize\x18\x02 \x01(\r\"\x1f\n\rMobileRequest\x12\x0e\n\x06mobile\x18\x01 \x01(\t\"\x17\n\tIdRequest\x12\n\n\x02id\x18\x01 \x01(\x03\"D\n\x0e\x43reateUserInfo\x12\x10\n\x08nickName\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0e\n\x06mobile\x18\x03 \x01(\t\"P\n\x0eUpdateUserInfo\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x10\n\x08nickName\x18\x02 \x01(\t\x12\x0e\n\x06gender\x18\x03 \x01(\t\x12\x10\n\x08\x62irthDay\x18\x04 \x01(\x04\"B\n\x10UserListResponse\x12\r\n\x05total\x18\x01 \x01(\x05\x12\x1f\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x11.UserInfoResponse\"\x82\x01\n\x10UserInfoResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x10\n\x08password\x18\x02 \x01(\t\x12\x0e\n\x06mobile\x18\x03 \x01(\t\x12\x10\n\x08nickName\x18\x04 \x01(\t\x12\x10\n\x08\x62irthDay\x18\x05 \x01(\x04\x12\x0e\n\x06gender\x18\x06 \x01(\t\x12\x0c\n\x04role\x18\x07 \x01(\x05\x32\xb5\x02\n\x04User\x12+\n\x0bGetUserList\x12\t.PageInfo\x1a\x11.UserListResponse\x12\x34\n\x0fGetUserByMobile\x12\x0e.MobileRequest\x1a\x11.UserInfoResponse\x12,\n\x0bGetUserById\x12\n.IdRequest\x1a\x11.UserInfoResponse\x12\x30\n\nCreateUser\x12\x0f.CreateUserInfo\x1a\x11.UserInfoResponse\x12\x35\n\nUpdateUser\x12\x0f.UpdateUserInfo\x1a\x16.google.protobuf.Empty\x12\x33\n\rCheckPassword\x12\x12.PasswordCheckInfo\x1a\x0e.checkResponseB\tZ\x07.;protob\x06proto3'
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
 
+
+
+_PASSWORDCHECKINFO = _descriptor.Descriptor(
+  name='PasswordCheckInfo',
+  full_name='PasswordCheckInfo',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='password', full_name='PasswordCheckInfo.password', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='encryptedPassword', full_name='PasswordCheckInfo.encryptedPassword', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=43,
+  serialized_end=107,
+)
+
+
+_CHECKRESPONSE = _descriptor.Descriptor(
+  name='checkResponse',
+  full_name='checkResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='checkResponse.success', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=109,
+  serialized_end=141,
+)
 
 
 _PAGEINFO = _descriptor.Descriptor(
@@ -61,8 +132,8 @@ _PAGEINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=43,
-  serialized_end=80,
+  serialized_start=143,
+  serialized_end=180,
 )
 
 
@@ -93,8 +164,8 @@ _MOBILEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=82,
-  serialized_end=113,
+  serialized_start=182,
+  serialized_end=213,
 )
 
 
@@ -125,8 +196,8 @@ _IDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=115,
-  serialized_end=138,
+  serialized_start=215,
+  serialized_end=238,
 )
 
 
@@ -171,8 +242,8 @@ _CREATEUSERINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=140,
-  serialized_end=208,
+  serialized_start=240,
+  serialized_end=308,
 )
 
 
@@ -224,8 +295,8 @@ _UPDATEUSERINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=210,
-  serialized_end=290,
+  serialized_start=310,
+  serialized_end=390,
 )
 
 
@@ -263,8 +334,8 @@ _USERLISTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=292,
-  serialized_end=358,
+  serialized_start=392,
+  serialized_end=458,
 )
 
 
@@ -337,11 +408,13 @@ _USERINFORESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=361,
-  serialized_end=491,
+  serialized_start=461,
+  serialized_end=591,
 )
 
 _USERLISTRESPONSE.fields_by_name['data'].message_type = _USERINFORESPONSE
+DESCRIPTOR.message_types_by_name['PasswordCheckInfo'] = _PASSWORDCHECKINFO
+DESCRIPTOR.message_types_by_name['checkResponse'] = _CHECKRESPONSE
 DESCRIPTOR.message_types_by_name['PageInfo'] = _PAGEINFO
 DESCRIPTOR.message_types_by_name['MobileRequest'] = _MOBILEREQUEST
 DESCRIPTOR.message_types_by_name['IdRequest'] = _IDREQUEST
@@ -350,6 +423,20 @@ DESCRIPTOR.message_types_by_name['UpdateUserInfo'] = _UPDATEUSERINFO
 DESCRIPTOR.message_types_by_name['UserListResponse'] = _USERLISTRESPONSE
 DESCRIPTOR.message_types_by_name['UserInfoResponse'] = _USERINFORESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+PasswordCheckInfo = _reflection.GeneratedProtocolMessageType('PasswordCheckInfo', (_message.Message,), {
+  'DESCRIPTOR' : _PASSWORDCHECKINFO,
+  '__module__' : 'user_pb2'
+  # @@protoc_insertion_point(class_scope:PasswordCheckInfo)
+  })
+_sym_db.RegisterMessage(PasswordCheckInfo)
+
+checkResponse = _reflection.GeneratedProtocolMessageType('checkResponse', (_message.Message,), {
+  'DESCRIPTOR' : _CHECKRESPONSE,
+  '__module__' : 'user_pb2'
+  # @@protoc_insertion_point(class_scope:checkResponse)
+  })
+_sym_db.RegisterMessage(checkResponse)
 
 PageInfo = _reflection.GeneratedProtocolMessageType('PageInfo', (_message.Message,), {
   'DESCRIPTOR' : _PAGEINFO,
@@ -410,8 +497,8 @@ _USER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=494,
-  serialized_end=750,
+  serialized_start=594,
+  serialized_end=903,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetUserList',
@@ -460,6 +547,16 @@ _USER = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_UPDATEUSERINFO,
     output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='CheckPassword',
+    full_name='User.CheckPassword',
+    index=5,
+    containing_service=None,
+    input_type=_PASSWORDCHECKINFO,
+    output_type=_CHECKRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
