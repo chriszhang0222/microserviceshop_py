@@ -82,9 +82,11 @@ class UserServiceServer(BaseServer):
     server = None
     consul = None
 
-    def __init__(self):
+    def __init__(self, port=None):
         super(UserServiceServer, self).__init__()
         self.SERVICE_ID = self.SERVICE_NAME + "-" + f'{str(uuid.uuid4())}'
+        if port is not None:
+            self.USER_SERVICE_PORT = port
         logger.add("logs/user_service_{time}.log")
         try:
             self.read_config()
@@ -101,14 +103,11 @@ class UserServiceServer(BaseServer):
         env = environ.Env()
         environ.Env.read_env(path('.env'))
         self.USER_SERVICE_HOST = env.get_value('user_srv_host')
-        self.USER_SERVICE_PORT = int(env.get_value('user_srv_port'))
+        if self.USER_SERVICE_PORT is None:
+            self.USER_SERVICE_PORT = int(env.get_value('user_srv_port'))
         self.CONSUL_HOST = env.get_value('consul_server_host')
         self.CONSUL_PORT = int(env.get_value('consul_server_port'))
 
-    def unregister(self):
-        if self.consul is not None:
-            logger.info('Unregister from consul {}:{}'.format(self.CONSUL_HOST, self.CONSUL_PORT))
-            self.consul.agent.service.deregister(self.SERVICE_ID)
 
     def register_request(self):
         url = "http://{}:{}/v1/agent/service/register".format(self.CONSUL_HOST, self.CONSUL_PORT)
@@ -134,21 +133,6 @@ class UserServiceServer(BaseServer):
         else:
             print(f"registered failed：{rsp.status_code}")
 
-    def register(self):
-        self.consul = consul.Consul(host=self.CONSUL_HOST, port=self.CONSUL_PORT)
-        check = {
-            "GRPC": f"{self.USER_SERVICE_HOST}:{self.USER_SERVICE_PORT}",
-            "GRPCUseTLS": False,
-            "Timeout": "5s",
-            "Interval": "5s",
-            "DeregisterCriticalServiceAfter": "15s"
-        }
-        rsp = self.consul.agent.service.register(name=self.SERVICE_NAME, service_id=self.SERVICE_ID,
-                                 address=self.USER_SERVICE_HOST, port=self.USER_SERVICE_PORT, tags=["mxshop"],check=check)
-        if rsp:
-            logger.info('Registered at consul {}:{}'.format(self.CONSUL_HOST, self.CONSUL_PORT))
-        else:
-            raise Exception('Failed to registered at consul ' + f"{self.CONSUL_HOST}:{self.CONSUL_PORT}")
 
     def serve(self):
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=40))
@@ -166,6 +150,12 @@ class UserServiceServer(BaseServer):
 
 if __name__ == "__main__":
     logging.basicConfig()
-
-    server = UserServiceServer()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port',
+                        nargs="?",
+                        type=int,
+                        default=USER_SERVICE_PORT,
+                        help="port")
+    args = parser.parse_args()
+    server = UserServiceServer(args.port)
     server.serve()
