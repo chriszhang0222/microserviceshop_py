@@ -7,7 +7,7 @@ class ReconnectMySQLDataBase(PooledMySQLDatabase, ReconnectMixin):
 
 
 MYSQL_DB = "mxshop_user_srv"
-MYSQL_HOST = "192.168.0.17"
+MYSQL_HOST = "192.168.0.10"
 MYSQL_PORT = 3306
 MYSQL_USER = "root"
 MYSQL_PASSWORD = "31415926"
