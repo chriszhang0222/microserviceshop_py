@@ -1,4 +1,5 @@
 import consul
+import requests
 from loguru import logger
 
 
@@ -27,9 +28,9 @@ class BaseServer:
             "Interval": "5s",
             "DeregisterCriticalServiceAfter": "15s"
         }
-        rsp = self.consul.agent.service.register(name=self.SERVICE_NAME, service_id=self.SERVICE_ID,
-                                                 address=self.USER_SERVICE_HOST, port=self.USER_SERVICE_PORT,
-                                                 tags=["mxshop"], check=check)
+        rsp: bool = self.consul.agent.service.register(name=self.SERVICE_NAME, service_id=self.SERVICE_ID,
+                                                       address=self.USER_SERVICE_HOST, port=self.USER_SERVICE_PORT,
+                                                       tags=["mxshop"], check=check)
         if rsp:
             logger.info('Registered at consul {}:{}'.format(self.CONSUL_HOST, self.CONSUL_PORT))
         else:
@@ -41,7 +42,11 @@ class BaseServer:
             self.consul.agent.service.deregister(self.SERVICE_ID)
 
     def get_all_service(self):
-        pass
+        return self.consul.Agent.services()
 
-    def filter_service(self, filter):
-        pass
+    def filter_service(self, filter: str):
+        url = f"{self.CONSUL_HOST}:{self.CONSUL_PORT}/v1/agent/services"
+        params = {
+            "filter": f'Service=="{filter}"'
+        }
+        return requests.get(url, params=params).json()
