@@ -73,8 +73,8 @@ def serve():
 
 
 class UserServiceServer(BaseServer):
-    USER_SERVICE_HOST = None
-    USER_SERVICE_PORT = None
+    SERVICE_HOST = None
+    SERVICE_PORT = None
     CONSUL_HOST = None
     CONSUL_PORT = None
     SERVICE_NAME = "user-srv"
@@ -86,7 +86,7 @@ class UserServiceServer(BaseServer):
         super(UserServiceServer, self).__init__()
         self.SERVICE_ID = self.SERVICE_NAME + "-" + f'{str(uuid.uuid4())}'
         if port is not None:
-            self.USER_SERVICE_PORT = port
+            self.SERVICE_PORT = port
         logger.add("logs/user_service_{time}.log")
         try:
             self.read_config()
@@ -102,9 +102,9 @@ class UserServiceServer(BaseServer):
         path = environ.Path(__file__) - 1
         env = environ.Env()
         environ.Env.read_env(path('.env'))
-        self.USER_SERVICE_HOST = env.get_value('user_srv_host')
-        if self.USER_SERVICE_PORT is None:
-            self.USER_SERVICE_PORT = int(env.get_value('user_srv_port'))
+        self.SERVICE_HOST = env.get_value('user_srv_host')
+        if self.SERVICE_PORT is None:
+            self.SERVICE_PORT = int(env.get_value('user_srv_port'))
         self.CONSUL_HOST = env.get_value('consul_server_host')
         self.CONSUL_PORT = int(env.get_value('consul_server_port'))
 
@@ -118,10 +118,10 @@ class UserServiceServer(BaseServer):
             "Name": self.SERVICE_NAME,
             "ID": self.SERVICE_ID,
             "Tags": ["mxshop", "bobby", "imooc", "web"],
-            "Address": self.USER_SERVICE_HOST,
-            "Port": self.USER_SERVICE_PORT,
+            "Address": self.SERVICE_HOST,
+            "Port": self.SERVICE_PORT,
             "Check": {
-                "GRPC": f"{self.USER_SERVICE_HOST}:{self.USER_SERVICE_PORT}",
+                "GRPC": f"{self.SERVICE_HOST}:{self.SERVICE_PORT}",
                 "GRPCUseTLS": False,
                 "Timeout": "5s",
                 "Interval": "5s",
@@ -139,10 +139,10 @@ class UserServiceServer(BaseServer):
         user_pb2_grpc.add_UserServicer_to_server(UserServicer(), self.server)
         health_servicer = health.HealthServicer()
         health_pb2_grpc.add_HealthServicer_to_server(health_servicer, self.server)
-        self.server.add_insecure_port(f'[::]:{self.USER_SERVICE_PORT}')
+        self.server.add_insecure_port(f'[::]:{self.SERVICE_PORT}')
         signal.signal(signal.SIGINT, self.onExit)
         signal.signal(signal.SIGTERM, self.onExit)
-        logger.info("Start User Srv Service at {}:{}".format(self.USER_SERVICE_HOST, self.USER_SERVICE_PORT))
+        logger.info("Start User Srv Service at {}:{}".format(self.SERVICE_HOST, self.SERVICE_PORT))
         self.server.start()
         self.register()
         self.server.wait_for_termination()
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument('--port',
                         nargs="?",
                         type=int,
-                        default=USER_SERVICE_PORT,
+                        default=50058,
                         help="port")
     args = parser.parse_args()
     server = UserServiceServer(args.port)

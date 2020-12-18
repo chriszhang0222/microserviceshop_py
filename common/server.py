@@ -4,14 +4,15 @@ from loguru import logger
 
 
 class BaseServer:
-    USER_SERVICE_HOST = None
-    USER_SERVICE_PORT = None
+    SERVICE_HOST = None
+    SERVICE_PORT = None
     CONSUL_HOST = None
     CONSUL_PORT = None
     SERVICE_NAME = None
     SERVICE_ID = None
     server = None
     consul = None
+    check = None
 
     def read_config(self):
         pass
@@ -21,15 +22,18 @@ class BaseServer:
 
     def register(self):
         self.consul = consul.Consul(host=self.CONSUL_HOST, port=self.CONSUL_PORT)
-        check = {
-            "GRPC": f"{self.USER_SERVICE_HOST}:{self.USER_SERVICE_PORT}",
-            "GRPCUseTLS": False,
-            "Timeout": "5s",
-            "Interval": "5s",
-            "DeregisterCriticalServiceAfter": "15s"
-        }
+        if self.check is None:
+            check = {
+                "GRPC": f"{self.SERVICE_HOST}:{self.SERVICE_PORT}",
+                "GRPCUseTLS": False,
+                "Timeout": "5s",
+                "Interval": "5s",
+                "DeregisterCriticalServiceAfter": "15s"
+            }
+        else:
+            check = self.check
         rsp: bool = self.consul.agent.service.register(name=self.SERVICE_NAME, service_id=self.SERVICE_ID,
-                                                       address=self.USER_SERVICE_HOST, port=self.USER_SERVICE_PORT,
+                                                       address=self.SERVICE_HOST, port=self.SERVICE_PORT,
                                                        tags=["mxshop"], check=check)
         if rsp:
             logger.info('Registered at consul {}:{}'.format(self.CONSUL_HOST, self.CONSUL_PORT))
