@@ -7,7 +7,7 @@ from user_service.model.models import User
 from peewee import DoesNotExist
 from passlib.hash import pbkdf2_sha256
 from google.protobuf import empty_pb2
-
+from loguru import logger
 
 class UserServicer(user_pb2_grpc.UserServicer):
 
@@ -31,7 +31,6 @@ class UserServicer(user_pb2_grpc.UserServicer):
         password = request.password
         mobile = request.mobile
         try:
-            user = User.get(User.mobile == mobile)
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
             context.set_details("User exist")
             return user_pb2.UserInfoResponse()

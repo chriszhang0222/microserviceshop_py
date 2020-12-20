@@ -20,7 +20,6 @@ from user_service.handler.user import UserServicer
 from common.grpc_health.v1 import health_pb2, health_pb2_grpc
 from common.grpc_health.v1 import health
 from common.server import BaseServer
-from concurrent.futures import ThreadPoolExecutor
 USER_SERVICE_HOST = None
 USER_SERVICE_PORT = None
 CONSUL_HOST = None
