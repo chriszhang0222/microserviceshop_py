@@ -20,6 +20,7 @@ from user_service.handler.user import UserServicer
 from common.grpc_health.v1 import health_pb2, health_pb2_grpc
 from common.grpc_health.v1 import health
 from common.server import BaseServer
+from user_service.settings import setting
 USER_SERVICE_HOST = None
 USER_SERVICE_PORT = None
 CONSUL_HOST = None
@@ -81,11 +82,13 @@ class UserServiceServer(BaseServer):
     server = None
     consul = None
 
-    def __init__(self, port=None):
+    def __init__(self, host, port):
         super(UserServiceServer, self).__init__()
         self.SERVICE_ID = self.SERVICE_NAME + "-" + f'{str(uuid.uuid4())}'
-        if port is not None:
-            self.SERVICE_PORT = port
+        self.SERVICE_HOST = host
+        self.SERVICE_PORT = port
+        self.CONSUL_HOST = setting.data["consul"]["host"]
+        self.CONSUL_PORT = setting.data["consul"]["port"]
         logger.add("logs/user_service_{time}.log")
         try:
             self.read_config()
@@ -97,7 +100,7 @@ class UserServiceServer(BaseServer):
         self.unregister()
         sys.exit(0)
 
-    def read_config(self):
+    def read_config_from_env(self):
         path = environ.Path(__file__) - 1
         env = environ.Env()
         environ.Env.read_env(path('.env'))
@@ -106,7 +109,6 @@ class UserServiceServer(BaseServer):
             self.SERVICE_PORT = int(env.get_value('user_srv_port'))
         self.CONSUL_HOST = env.get_value('consul_server_host')
         self.CONSUL_PORT = int(env.get_value('consul_server_port'))
-
 
     def register_request(self):
         url = "http://{}:{}/v1/agent/service/register".format(self.CONSUL_HOST, self.CONSUL_PORT)
@@ -150,11 +152,15 @@ class UserServiceServer(BaseServer):
 if __name__ == "__main__":
     logging.basicConfig()
     parser = argparse.ArgumentParser()
+    parser.add_argument('--host', nargs="?",
+                        type=str,
+                        default='192.16.0.14',
+                        help="host")
     parser.add_argument('--port',
                         nargs="?",
                         type=int,
                         default=50058,
                         help="port")
     args = parser.parse_args()
-    server = UserServiceServer(args.port)
+    server = UserServiceServer(args.host, args.port)
     server.serve()
