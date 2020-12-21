@@ -73,14 +73,7 @@ def serve():
 
 
 class UserServiceServer(BaseServer):
-    SERVICE_HOST = None
-    SERVICE_PORT = None
-    CONSUL_HOST = None
-    CONSUL_PORT = None
     SERVICE_NAME = "user-srv"
-    SERVICE_ID = None
-    server = None
-    consul = None
 
     def __init__(self, host, port):
         super(UserServiceServer, self).__init__()
@@ -90,10 +83,6 @@ class UserServiceServer(BaseServer):
         self.CONSUL_HOST = setting.data["consul"]["host"]
         self.CONSUL_PORT = setting.data["consul"]["port"]
         logger.add("logs/user_service_{time}.log")
-        try:
-            self.read_config()
-        except:
-            logger.error("Read config error")
 
     def onExit(self, signo, frame):
         logger.info("User service terminate")
@@ -154,12 +143,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', nargs="?",
                         type=str,
-                        default='192.16.0.14',
+                        default='192.168.0.14',
                         help="host")
     parser.add_argument('--port',
                         nargs="?",
                         type=int,
-                        default=50058,
+                        default=50052,
                         help="port")
     args = parser.parse_args()
     server = UserServiceServer(args.host, args.port)

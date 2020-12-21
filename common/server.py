@@ -14,6 +14,9 @@ class BaseServer:
     consul = None
     check = None
 
+    def onExit(self, signo, frame):
+        pass
+
     def read_config(self):
         pass
 
