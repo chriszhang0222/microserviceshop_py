@@ -1,4 +1,4 @@
-##MicroService Shop Application
+## MicroService Shop Application
 
 #### Use python, grpc, peewee as the service layer
 
