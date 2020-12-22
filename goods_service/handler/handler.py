@@ -84,3 +84,16 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
         for good in goods:
             rsp.data.append(self.convert_model_to_message(good))
         return rsp
+
+    def GetGoodsDetail(self, request: goods_pb2.GoodInfoRequest, context):
+        try:
+            goods = Goods.get(Goods.id == request.id)
+            goods.click_num += 1
+            goods.save()
+            return self.convert_model_to_message(goods)
+        except:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Goods Does not exist")
+            return goods_pb2.GoodsInfoResponse()
+
+
