@@ -18,15 +18,15 @@ class BaseModel(Model):
         return super().save(*args, **kwargs)
 
     @classmethod
-    def delete(cls, permantly=False):
-        if permantly:
+    def delete(cls, permanently=False):
+        if permanently:
             return super().delete()
         else:
             return super().update(is_deleted=True)
 
-    def delete_instance(self, permantely=False, recursive=False, delete_nullable=False):
-        if permantely:
-            return self.delete(permantely).where(self._pk_expr()).execute()
+    def delete_instance(self, permanently=False, recursive=False, delete_nullable=False):
+        if permanently:
+            return self.delete(permanently).where(self._pk_expr()).execute()
         else:
             self.is_deleted = True
             self.save()
@@ -90,4 +90,5 @@ class Banner(BaseModel):
 
 
 if __name__ == "__main__":
-    settings.DB.create_tables([Category,Goods, Brands, GoodsCategoryBrand, Banner])
+    # settings.DB.create_tables([Category,Goods, Brands, GoodsCategoryBrand, Banner])
+    pass
