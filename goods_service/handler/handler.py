@@ -7,7 +7,7 @@ from loguru import logger
 
 
 class GoodsServices(goods_pb2_grpc.GoodsServicer):
-    def convert_model_to_message(self, goods:BaseModel):
+    def convert_model_to_message(self, goods:BaseModel) -> goods_pb2.GoodsInfoResponse:
         info_rsp = goods_pb2.GoodsInfoResponse()
         info_rsp.id = goods.id
         info_rsp.categoryId = goods.category_id
@@ -84,6 +84,7 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
             rsp.data.append(self.convert_model_to_message(good))
         return rsp
 
+    @logger.catch
     def GetGoodsDetail(self, request: goods_pb2.GoodInfoRequest, context):
         try:
             goods = Goods.get(Goods.id == request.id)
@@ -95,6 +96,7 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
             context.set_details("Goods Does not exist")
             return goods_pb2.GoodsInfoResponse()
 
+    @logger.catch
     def BatchGetGoods(self, request: goods_pb2.BatchGoodsIdInfo, context) -> goods_pb2.GoodsListResponse:
         rsp = goods_pb2.GoodsListResponse()
         ids = request.id
@@ -104,11 +106,104 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
             rsp.append(self.convert_model_to_message(good))
         return rsp
 
+    @logger.catch
     def CreateGoods(self, request: goods_pb2.CreateGoodsInfo, context) -> goods_pb2.GoodsInfoResponse:
-        return super().CreateGoods(request, context)
+        try:
+            category = Category.get(Category.id==request.categoryId)
+        except DoesNotExist as e:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Category does not exist")
+            return goods_pb2.GoodsInfoResponse()
+        try:
+            brand = Brands.get(Brands.id==request.brandId)
+        except DoesNotExist as e:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Brand does not exist")
+            return goods_pb2.GoodsInfoResponse()
+        goods = Goods()
+        goods.brand = brand
+        goods.category = category
+        goods.name = request.name
+        goods.goods_sn = request.goodsSn
+        goods.market_price = request.marketPrice
+        goods.shop_price = request.shopPrice
+        goods.goods_brief = request.goodsBrief
+        goods.ship_free = request.shipFree
+        goods.images = list(request.images)
+        goods.desc_images = list(request.descImages)
+        goods.goods_front_image = request.goodsFrontImage
+        goods.is_new = request.isNew
+        goods.is_hot = request.isHot
+        goods.on_sale = request.onSale
+        goods.save()
+        return self.convert_model_to_message(goods)
 
+
+    @logger.catch
     def DeleteGoods(self, request: goods_pb2.DeleteGoodsInfo, context):
-        return super().DeleteGoods(request, context)
+        try:
+            goods:Goods = Goods.get(Goods.id == request.id)
+            goods.delete_instance()
+            return empty_pb2.Empty()
+        except DoesNotExist as e:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Good does not exist")
+            return empty_pb2.Empty()
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return empty_pb2.Empty()
+
+    @logger.catch
+    def UpdateGoods(self, request: goods_pb2.CreateGoodsInfo, context):
+        if not request.id:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Empty Goods id")
+            return empty_pb2.Empty()
+        category, brand = None, None
+        if request.categoryId:
+            try:
+                category = Category.get(Category.id == request.categoryId)
+            except DoesNotExist as e:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details("Category does not exist")
+                return goods_pb2.GoodsInfoResponse()
+        if request.brandId:
+            try:
+                brand = Brands.get(Brands.id == request.brandId)
+            except DoesNotExist as e:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details("Brand does not exist")
+                return goods_pb2.GoodsInfoResponse()
+
+        try:
+            goods = Goods.get(Goods.id == request.id)
+        except DoesNotExist as e:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Goods does not exist")
+            return goods_pb2.GoodsInfoResponse()
+
+        if brand:
+            goods.brand = brand
+        if category:
+            goods.category = category
+        goods.name = request.name
+        goods.goods_sn = request.goodsSn
+        goods.market_price = request.marketPrice
+        goods.shop_price = request.shopPrice
+        goods.goods_brief = request.goodsBrief
+        goods.ship_free = request.shipFree
+        goods.images = list(request.images)
+        goods.desc_images = list(request.descImages)
+        goods.goods_front_image = request.goodsFrontImage
+        goods.is_new = request.isNew
+        goods.is_hot = request.isHot
+        goods.on_sale = request.onSale
+
+        goods.save()
+        return self.convert_model_to_message(goods)
+
+
 
 
 
