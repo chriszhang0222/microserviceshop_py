@@ -7,9 +7,8 @@ from loguru import logger
 
 
 class GoodsServices(goods_pb2_grpc.GoodsServicer):
-    def convert_model_to_message(self, goods):
+    def convert_model_to_message(self, goods:BaseModel):
         info_rsp = goods_pb2.GoodsInfoResponse()
-
         info_rsp.id = goods.id
         info_rsp.categoryId = goods.category_id
         info_rsp.name = goods.name
@@ -38,7 +37,7 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
         return info_rsp
 
     @logger.catch
-    def GoodsList(self, request: goods_pb2.GoodsFilterRequest, context):
+    def GoodsList(self, request: goods_pb2.GoodsFilterRequest, context) -> goods_pb2.GoodsListResponse:
         rsp = goods_pb2.GoodsListResponse()
         goods: BaseModel = Goods.select()
         if request.keyWords:
@@ -66,7 +65,7 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
                     for category in categorys:
                         ids.append(category.id)
                 elif level == 2:
-                    categorys =  Category.select().where(Category.parent_category_id==request.topCategory)
+                    categorys = Category.select().where(Category.parent_category_id==request.topCategory)
                     for category in categorys:
                         ids.append(category.id)
                 elif level == 3:
@@ -95,5 +94,24 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("Goods Does not exist")
             return goods_pb2.GoodsInfoResponse()
+
+    def BatchGetGoods(self, request: goods_pb2.BatchGoodsIdInfo, context) -> goods_pb2.GoodsListResponse:
+        rsp = goods_pb2.GoodsListResponse()
+        ids = request.id
+        goods = Goods.where(Goods.id.in_(ids))
+        rsp.total = goods.count()
+        for good in goods:
+            rsp.append(self.convert_model_to_message(good))
+        return rsp
+
+    def CreateGoods(self, request: goods_pb2.CreateGoodsInfo, context) -> goods_pb2.GoodsInfoResponse:
+        return super().CreateGoods(request, context)
+
+    def DeleteGoods(self, request: goods_pb2.DeleteGoodsInfo, context):
+        return super().DeleteGoods(request, context)
+
+
+
+
 
 
