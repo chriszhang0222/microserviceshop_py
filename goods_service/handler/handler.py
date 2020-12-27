@@ -224,7 +224,8 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
             category_rsp = goods_pb2.CategoryInfoResponse()
             category_rsp.id = category.id
             category_rsp.name = category.name
-            category_rsp.parentCategory = category.parent_category_id
+            if category.parent_category_id:
+                category_rsp.parentCategory = category.parent_category_id
             category_rsp.level = category.level
             category_rsp.isTab = category.is_tab
             rsp.data.append(category_rsp)
@@ -251,3 +252,132 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
                         data1["sub_category"].append(data2)
         rsp.jsonData = json.dumps(level1)
         return rsp
+
+    def GetSubCategory(self, request, context):
+        category_list_rsp = goods_pb2.SubCategoryListResponse()
+
+        try:
+            category_info = Category.get(Category.id == request.id)
+            category_list_rsp.info.id = category_info.id
+            category_list_rsp.info.name = category_info.name
+            category_list_rsp.info.level = category_info.level
+            category_list_rsp.info.isTab = category_info.is_tab
+            if category_info.parent_category:
+                category_list_rsp.info.parentCategory = category_info.parent_category_id
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Category does not exist')
+            return goods_pb2.SubCategoryListResponse()
+
+        categorys = Category.select().where(Category.parent_category == request.id)
+        category_list_rsp.total = categorys.count()
+        for category in categorys:
+            category_rsp = goods_pb2.CategoryInfoResponse()
+            category_rsp.id = category.id
+            category_rsp.name = category.name
+            if category_info.parent_category:
+                category_rsp.parentCategory = category_info.parent_category_id
+            category_rsp.level = category.level
+            category_rsp.isTab = category.is_tab
+
+            category_list_rsp.subCategorys.append(category_rsp)
+
+        return category_list_rsp
+
+    def CreateCategory(self, request, context):
+        try:
+            category = Category()
+            category.name = request.name
+            if request.level != 1:
+                category.parent_category = request.parentCategory
+            category.level = request.level
+            category.is_tab = request.isTab
+            category.save()
+
+            category_rsp = goods_pb2.CategoryInfoResponse()
+            category_rsp.id = category.id
+            category_rsp.name = category.name
+            if category.parent_category:
+                category_rsp.parentCategory = category.parent_category.id
+            category_rsp.level = category.level
+            category_rsp.isTab = category.is_tab
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return goods_pb2.CategoryInfoResponse()
+
+        return category_rsp
+
+    def DeleteCategory(self, request, context):
+        try:
+            category = Category.get(request.id)
+            category.delete_instance()
+
+            # TODO 删除响应的category下的商品
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Does not exist')
+            return empty_pb2.Empty()
+
+    def UpdateCategory(self, request, context):
+        try:
+            category = Category.get(request.id)
+            if request.name:
+                category.name = request.name
+            if request.parentCategory:
+                category.parent_category = request.parentCategory
+            if request.level:
+                category.level = request.level
+            if request.isTab:
+                category.is_tab = request.isTab
+            category.save()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Does not exist')
+            return empty_pb2.Empty()
+
+    def BrandList(self, request, context):
+        return super().BrandList(request, context)
+
+    def CreateBrand(self, request, context):
+        return super().CreateBrand(request, context)
+
+    def DeleteBrand(self, request, context):
+        return super().DeleteBrand(request, context)
+
+    def UpdateBrand(self, request, context):
+        return super().UpdateBrand(request, context)
+
+    def BannerList(self, request, context):
+        return super().BannerList(request, context)
+
+    def CreateBanner(self, request, context):
+        return super().CreateBanner(request, context)
+
+    def DeleteBanner(self, request, context):
+        return super().DeleteBanner(request, context)
+
+    def UpdateBanner(self, request, context):
+        return super().UpdateBanner(request, context)
+
+    def CategoryBrandList(self, request, context):
+        return super().CategoryBrandList(request, context)
+
+    def GetCategoryBrandList(self, request, context):
+        return super().GetCategoryBrandList(request, context)
+
+    def CreateCategoryBrand(self, request, context):
+        return super().CreateCategoryBrand(request, context)
+
+    def DeleteCategoryBrand(self, request, context):
+        return super().DeleteCategoryBrand(request, context)
+
+    def UpdateCategoryBrand(self, request, context):
+        return super().UpdateCategoryBrand(request, context)
+
+
+
+
