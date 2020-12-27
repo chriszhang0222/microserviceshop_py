@@ -339,44 +339,254 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
             context.set_details('Does not exist')
             return empty_pb2.Empty()
 
-    def BrandList(self, request, context):
-        return super().BrandList(request, context)
+    @logger.catch
+    def BannerList(self, request: empty_pb2.Empty, context):
+        # 获取分类列表
+        rsp = goods_pb2.BannerListResponse()
+        banners = Banner.select()
 
-    def CreateBrand(self, request, context):
-        return super().CreateBrand(request, context)
+        rsp.total = banners.count()
+        for banner in banners:
+            banner_rsp = goods_pb2.BannerResponse()
 
-    def DeleteBrand(self, request, context):
-        return super().DeleteBrand(request, context)
+            banner_rsp.id = banner.id
+            banner_rsp.image = banner.image
+            banner_rsp.index = banner.index
+            banner_rsp.url = banner.url
 
-    def UpdateBrand(self, request, context):
-        return super().UpdateBrand(request, context)
+            rsp.data.append(banner_rsp)
 
-    def BannerList(self, request, context):
-        return super().BannerList(request, context)
+        return rsp
 
-    def CreateBanner(self, request, context):
-        return super().CreateBanner(request, context)
+    @logger.catch
+    def CreateBanner(self, request: goods_pb2.BannerRequest, context):
+        banner = Banner()
 
-    def DeleteBanner(self, request, context):
-        return super().DeleteBanner(request, context)
+        banner.image = request.image
+        banner.index = request.index
+        banner.url = request.url
+        banner.save()
 
-    def UpdateBanner(self, request, context):
-        return super().UpdateBanner(request, context)
+        banner_rsp = goods_pb2.BannerResponse()
+        banner_rsp.id = banner.id
+        banner_rsp.image = banner.image
+        banner_rsp.url = banner.url
 
-    def CategoryBrandList(self, request, context):
-        return super().CategoryBrandList(request, context)
+        return banner_rsp
 
+    @logger.catch
+    def DeleteBanner(self, request: goods_pb2.BannerRequest, context):
+        try:
+            banner = Banner.get(request.id)
+            banner.delete_instance()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Banner does not exist')
+            return empty_pb2.Empty()
+
+    @logger.catch
+    def UpdateBanner(self, request: goods_pb2.BannerRequest, context):
+        try:
+            banner = Banner.get(request.id)
+            if request.image:
+                banner.image = request.image
+            if request.index:
+                banner.index = request.index
+            if request.url:
+                banner.url = request.url
+
+            banner.save()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Banner does not exist')
+            return empty_pb2.Empty()
+
+    # 品牌相关的接口
+
+    @logger.catch
+    def BrandList(self, request: empty_pb2.Empty, context):
+        # 获取品牌列表
+        rsp = goods_pb2.BrandListResponse()
+        brands = Brands.select()
+
+        rsp.total = brands.count()
+        for brand in brands:
+            brand_rsp = goods_pb2.BrandInfoResponse()
+
+            brand_rsp.id = brand.id
+            brand_rsp.name = brand.name
+            brand_rsp.logo = brand.logo
+
+            rsp.data.append(brand_rsp)
+
+        return rsp
+
+    @logger.catch
+    def CreateBrand(self, request: goods_pb2.BrandRequest, context):
+        brands = Brands.select().where(Brands.name == request.name)
+        if brands:
+            context.set_code(grpc.StatusCode.ALREADY_EXISTS)
+            context.set_details('Brand Already Exists')
+            return goods_pb2.BrandInfoResponse()
+
+        brand = Brands()
+
+        brand.name = request.name
+        brand.logo = request.logo
+
+        brand.save()
+
+        rsp = goods_pb2.BrandInfoResponse()
+        rsp.id = brand.id
+        rsp.name = brand.name
+        rsp.logo = brand.logo
+
+        return rsp
+
+    @logger.catch
+    def DeleteBrand(self, request: goods_pb2.BrandRequest, context):
+        try:
+            brand = Brands.get(request.id)
+            brand.delete_instance()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Record does not exist')
+            return empty_pb2.Empty()
+
+    @logger.catch
+    def UpdateBrand(self, request: goods_pb2.BrandRequest, context):
+        try:
+            brand = Brands.get(request.id)
+            if request.name:
+                brand.name = request.name
+            if request.logo:
+                brand.logo = request.logo
+
+            brand.save()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Record does not exist')
+            return empty_pb2.Empty()
+
+    @logger.catch
+    def CategoryBrandList(self, request: empty_pb2.Empty, context):
+        # 获取品牌分类列表
+        rsp = goods_pb2.CategoryBrandListResponse()
+        category_brands = GoodsCategoryBrand.select()
+
+        # 分页
+        start = 0
+        per_page_nums = 10
+        if request.pagePerNums:
+            per_page_nums = request.PagePerNums
+        if request.pages:
+            start = per_page_nums * (request.pages - 1)
+
+        category_brands = category_brands.limit(per_page_nums).offset(start)
+
+        rsp.total = category_brands.count()
+        for category_brand in category_brands:
+            category_brand_rsp = goods_pb2.CategoryBrandResponse()
+
+            category_brand_rsp.id = category_brand.id
+            category_brand_rsp.brand.id = category_brand.brand.id
+            category_brand_rsp.brand.name = category_brand.brand.name
+            category_brand_rsp.brand.logo = category_brand.brand.logo
+
+            category_brand_rsp.category.id = category_brand.category.id
+            category_brand_rsp.category.name = category_brand.category.name
+            category_brand_rsp.category.parentCategory = category_brand.category.parent_category_id
+            category_brand_rsp.category.level = category_brand.category.level
+            category_brand_rsp.category.isTab = category_brand.category.is_tab
+
+            rsp.data.append(category_brand_rsp)
+        return rsp
+
+    @logger.catch
     def GetCategoryBrandList(self, request, context):
-        return super().GetCategoryBrandList(request, context)
+        # 获取某一个分类的所有品牌
+        rsp = goods_pb2.BrandListResponse()
+        try:
+            category = Category.get(Category.id == request.id)
+            category_brands = GoodsCategoryBrand.select().where(GoodsCategoryBrand.category == category)
+            rsp.total = category_brands.count()
+            for category_brand in category_brands:
+                brand_rsp = goods_pb2.BrandInfoResponse()
+                brand_rsp.id = category_brand.brand.id
+                brand_rsp.name = category_brand.brand.name
+                brand_rsp.logo = category_brand.brand.logo
 
-    def CreateCategoryBrand(self, request, context):
-        return super().CreateCategoryBrand(request, context)
+                rsp.data.append(brand_rsp)
+        except DoesNotExist as e:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Record does not exist')
+            return rsp
 
-    def DeleteCategoryBrand(self, request, context):
-        return super().DeleteCategoryBrand(request, context)
+        return rsp
 
-    def UpdateCategoryBrand(self, request, context):
-        return super().UpdateCategoryBrand(request, context)
+    @logger.catch
+    def CreateCategoryBrand(self, request: goods_pb2.CategoryBrandRequest, context):
+        category_brand = GoodsCategoryBrand()
+
+        try:
+            brand = Brands.get(request.brandId)
+            category_brand.brand = brand
+            category = Category.get(request.categoryId)
+            category_brand.category = category
+            category_brand.save()
+
+            rsp = goods_pb2.CategoryBrandResponse()
+            rsp.id = category_brand.id  # 是另外一种思路
+
+            return rsp
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Record does not exist')
+            return goods_pb2.CategoryBrandResponse()
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details('Internal Server Error')
+            return goods_pb2.CategoryBrandResponse()
+
+    @logger.catch
+    def DeleteCategoryBrand(self, request: goods_pb2.CategoryBrandRequest, context):
+        try:
+            category_brand = GoodsCategoryBrand.get(request.id)
+            category_brand.delete_instance()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Record does not exist')
+            return empty_pb2.Empty()
+
+    @logger.catch
+    def UpdateCategoryBrand(self, request: goods_pb2.CategoryBrandRequest, context):
+        try:
+            category_brand = GoodsCategoryBrand.get(request.id)
+            brand = Brands.get(request.brandId)
+            category_brand.brand = brand
+            category = Category.get(request.categoryId)
+            category_brand.category = category
+            category_brand.save()
+
+            return empty_pb2.Empty()
+        except DoesNotExist:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details('Record does not exist')
+            return empty_pb2.Empty()
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details('Internal server error')
+            return empty_pb2.Empty()
 
 
 
