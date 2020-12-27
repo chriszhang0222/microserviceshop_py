@@ -1,3 +1,5 @@
+import json
+
 import grpc
 import time
 from goods_service.proto import goods_pb2, goods_pb2_grpc
@@ -7,7 +9,17 @@ from loguru import logger
 
 
 class GoodsServices(goods_pb2_grpc.GoodsServicer):
-    def convert_model_to_message(self, goods:BaseModel) -> goods_pb2.GoodsInfoResponse:
+    def category_model_to_dic(self, category: Category) -> dict:
+        res = {
+            "id": category.id,
+            "name": category.name,
+            "level": category.level,
+            "parent": category.parent_category_id,
+            "is_tab": category.is_tab
+        }
+        return res
+
+    def convert_model_to_message(self, goods: BaseModel) -> goods_pb2.GoodsInfoResponse:
         info_rsp = goods_pb2.GoodsInfoResponse()
         info_rsp.id = goods.id
         info_rsp.categoryId = goods.category_id
@@ -60,12 +72,12 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
                 if level == 1:
                     c2 = Category.alias()
                     categorys = Category.select().where(Category.parent_category_id.in_(
-                        c2.select(c2.id).where(c2.parent_category_id==request.topCategory)
+                        c2.select(c2.id).where(c2.parent_category_id == request.topCategory)
                     ))
                     for category in categorys:
                         ids.append(category.id)
                 elif level == 2:
-                    categorys = Category.select().where(Category.parent_category_id==request.topCategory)
+                    categorys = Category.select().where(Category.parent_category_id == request.topCategory)
                     for category in categorys:
                         ids.append(category.id)
                 elif level == 3:
@@ -109,13 +121,13 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
     @logger.catch
     def CreateGoods(self, request: goods_pb2.CreateGoodsInfo, context) -> goods_pb2.GoodsInfoResponse:
         try:
-            category = Category.get(Category.id==request.categoryId)
+            category = Category.get(Category.id == request.categoryId)
         except DoesNotExist as e:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("Category does not exist")
             return goods_pb2.GoodsInfoResponse()
         try:
-            brand = Brands.get(Brands.id==request.brandId)
+            brand = Brands.get(Brands.id == request.brandId)
         except DoesNotExist as e:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("Brand does not exist")
@@ -138,11 +150,10 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
         goods.save()
         return self.convert_model_to_message(goods)
 
-
     @logger.catch
     def DeleteGoods(self, request: goods_pb2.DeleteGoodsInfo, context):
         try:
-            goods:Goods = Goods.get(Goods.id == request.id)
+            goods: Goods = Goods.get(Goods.id == request.id)
             goods.delete_instance()
             return empty_pb2.Empty()
         except DoesNotExist as e:
@@ -203,10 +214,40 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
         goods.save()
         return self.convert_model_to_message(goods)
 
+    @logger.catch
+    def GetAllCategorysList(self, request, context):
+        rsp = goods_pb2.CategoryListResponse()
+        categories = Category.select()
+        rsp.total = categories.count()
+        level1, level2, level3 = [], [], []
+        for category in categories:
+            category_rsp = goods_pb2.CategoryInfoResponse()
+            category_rsp.id = category.id
+            category_rsp.name = category.name
+            category_rsp.parentCategory = category.parent_category_id
+            category_rsp.level = category.level
+            category_rsp.isTab = category.is_tab
+            rsp.data.append(category_rsp)
+            if category.level == 1:
+                level1.append(self.category_model_to_dic(category))
+            elif category.level == 2:
+                level2.append(self.category_model_to_dic(category))
+            elif category.level == 3:
+                level3.append(self.category_model_to_dic(category))
 
-
-
-
-
-
-
+        for data3 in level3:
+            for data2 in level2:
+                if data3["parent"] == data2["id"]:
+                    if "sub_category" not in data2:
+                        data2["sub_category"] = [data3]
+                    else:
+                        data2["sub_category"].append(data3)
+        for data2 in level2:
+            for data1 in level1:
+                if data2["parent"] == data1["id"]:
+                    if "sub_category" not in data1:
+                        data1["sub_category"] = [data2]
+                    else:
+                        data1["sub_category"].append(data2)
+        rsp.jsonData = json.dumps(level1)
+        return rsp
