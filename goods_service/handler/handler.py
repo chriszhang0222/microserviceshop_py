@@ -410,10 +410,16 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
     @logger.catch
     def BrandList(self, request: empty_pb2.Empty, context):
         # 获取品牌列表
+        start, per_page = 0, 10
+        if request.pagePerNums:
+            per_page = request.pagePerNums
+        if request.pages:
+            start = per_page * (request.pages-1)
         rsp = goods_pb2.BrandListResponse()
         brands = Brands.select()
 
         rsp.total = brands.count()
+        brands = brands.limit(per_page).offset(start)
         for brand in brands:
             brand_rsp = goods_pb2.BrandInfoResponse()
 
