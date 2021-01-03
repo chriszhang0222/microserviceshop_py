@@ -51,4 +51,7 @@ class InventoryHistory(BaseModel):
 
 
 if __name__ == "__main__":
-    settings.DB.create_tables([Inventory])
+    for i in range(421, 841):
+        inv = Inventory(goods=i, stocks=100)
+        inv.save(force_insert=True)
+    # settings.DB.create_tables([Inventory])

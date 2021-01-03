@@ -5,7 +5,7 @@ import nacos
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import ReconnectMixin
 from loguru import logger
-
+import redis
 class ReconnectMySQLDataBase(PooledMySQLDatabase, ReconnectMixin):
     pass
 
@@ -39,7 +39,10 @@ client = nacos.NacosClient(f"{NACOS['Host']}:{NACOS['Port']}", namespace=NACOS['
 data = json.loads(client.get_config(NACOS["DataId"], NACOS["Group"]))
 
 mysql_config = data['mysql']
+redis_config = data['redis']
 DB = ReconnectMySQLDataBase(database=mysql_config['db'], host=mysql_config['host'], port=mysql_config['port'], user=mysql_config['user'],
                             password=mysql_config['password'])
 
+pool = redis.ConnectionPool(host=redis_config['host'], port=redis_config['port'])
+Redis_client = redis.StrictRedis(connection_pool=pool)
 logger.info("Read config from nacos " + f"{NACOS['Host']}:{NACOS['Port']}")

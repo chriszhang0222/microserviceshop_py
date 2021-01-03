@@ -3,6 +3,7 @@ from inventory_service.proto import inventory_pb2, inventory_pb2_grpc
 from inventory_service.model.models import *
 from google.protobuf import empty_pb2
 from loguru import logger
+from common.lock.redis_lock import Lock
 
 
 class InventoryService(inventory_pb2_grpc.InventoryServicer):
@@ -36,6 +37,8 @@ class InventoryService(inventory_pb2_grpc.InventoryServicer):
     def Sell(self, request: inventory_pb2.SellInfo, context):
         with settings.DB.atomic() as txn:
             for item in request.goodsInfo:
+                lock = Lock(settings.Redis_client, f"lock:goods_{item.goodsId}", auto_renewal=True, expire=10)
+                lock.acquire()
                 try:
                     goods_inv = Inventory.get(Inventory.goods==item.goodsId)
                 except DoesNotExist:
@@ -51,12 +54,15 @@ class InventoryService(inventory_pb2_grpc.InventoryServicer):
                 else:
                     goods_inv.stocks -= item.num
                     goods_inv.save()
+                lock.release()
         return empty_pb2.Empty()
 
     @logger.catch
     def Reback(self, request, context):
         with settings.DB.atomic() as txn:
             for item in request.goodsInfo:
+                lock = Lock(settings.Redis_client, f"lock:goods_{item.goodsId}", auto_renewal=True, expire=10)
+                lock.acquire()
                 try:
                     goods_inv = Inventory.get(Inventory.goods == item.goodsId)
                 except DoesNotExist as e:
@@ -65,4 +71,5 @@ class InventoryService(inventory_pb2_grpc.InventoryServicer):
                     return empty_pb2.Empty()
                 goods_inv.stocks += item.num
                 goods_inv.save()
+                lock.release()
             return empty_pb2.Empty()
