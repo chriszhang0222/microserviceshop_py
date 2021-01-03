@@ -44,3 +44,5 @@ class Inventory(BaseModel):
     version = IntegerField(default=0)
 
 
+if __name__ == "__main__":
+    settings.DB.create_tables([Inventory])
