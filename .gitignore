@@ -4,3 +4,4 @@
 *.log
 nacos-data/
 commands.txt
+.env
