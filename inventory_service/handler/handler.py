@@ -32,8 +32,31 @@ class InventoryService(inventory_pb2_grpc.InventoryServicer):
             context.set_details("Inventory not found")
             return inventory_pb2.GoodsInvInfo()
 
-    def Sell(self, request, context):
-        return super().Sell(request, context)
+    @logger.catch
+    def Sell(self, request: inventory_pb2.SellInfo, context):
+        with settings.DB.atomic() as txn:
+            for item in request.goodsInfo:
+                goods_inv = Inventory.get(Inventory.goods==item.goodsId)
+                if goods_inv.stocks < item.num:
+                    txn.rollback()
+                    context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
+                    context.set_details(f"Inventory is not enough for goods:{item.goodsId}")
+                    return empty_pb2.Empty()
+                else:
+                    goods_inv.stocks -= item.num
+                    goods_inv.save()
+        return empty_pb2.Empty()
 
+    @logger.catch
     def Reback(self, request, context):
-        return super().Reback(request, context)
+        with settings.DB.atomic() as txn:
+            for item in request.goodsInfo:
+                try:
+                    goods_inv = Inventory.get(Inventory.goods == item.goodsId)
+                except DoesNotExist as e:
+                    txn.rollback()  # 事务回滚
+                    context.set_code(grpc.StatusCode.NOT_FOUND)
+                    return empty_pb2.Empty()
+                goods_inv.stocks += item.num
+                goods_inv.save()
+        return empty_pb2.Empty()
