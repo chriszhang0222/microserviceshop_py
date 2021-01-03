@@ -44,5 +44,11 @@ class Inventory(BaseModel):
     version = IntegerField(default=0)
 
 
+class InventoryHistory(BaseModel):
+    order_sn = CharField(max_length=20, unique=True)
+    order_inv_detail = CharField(max_length=200)
+    status = IntegerField(choices=((1, "DEDUCED"), (2, "RETURNED")), default=1, verbose_name="出库状态")
+
+
 if __name__ == "__main__":
     settings.DB.create_tables([Inventory])
