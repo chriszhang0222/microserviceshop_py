@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-import order_pb2 as order__pb2
+from . import order_pb2 as order__pb2
 
 
 class OrderStub(object):
