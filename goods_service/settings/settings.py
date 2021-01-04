@@ -41,5 +41,5 @@ data = json.loads(client.get_config(NACOS["DataId"], NACOS["Group"]))
 mysql_config = data['mysql']
 DB = ReconnectMySQLDataBase(database=mysql_config['db'], host=mysql_config['host'], port=mysql_config['port'], user=mysql_config['user'],
                             password=mysql_config['password'])
-
+HOST = data['host']
 logger.info("Read config from nacos " + f"{NACOS['Host']}:{NACOS['Port']}")

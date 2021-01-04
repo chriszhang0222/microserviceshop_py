@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', nargs="?",
                         type=str,
-                        default='192.168.0.14',
+                        default=settings.HOST,
                         help="host")
     parser.add_argument('--port',
                         nargs="?",

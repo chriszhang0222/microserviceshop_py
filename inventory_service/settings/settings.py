@@ -45,4 +45,5 @@ DB = ReconnectMySQLDataBase(database=mysql_config['db'], host=mysql_config['host
 
 pool = redis.ConnectionPool(host=redis_config['host'], port=redis_config['port'])
 Redis_client = redis.StrictRedis(connection_pool=pool)
+HOST = data['host']
 logger.info("Read config from nacos " + f"{NACOS['Host']}:{NACOS['Port']}")
