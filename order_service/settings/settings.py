@@ -45,4 +45,6 @@ DB = ReconnectMySQLDataBase(database=mysql_config['db'], host=mysql_config['host
 HOST = data['host']
 Goods_srv_name = data['goods_srv']['name']
 Inventory_srv_name = data['inventory_srv']['name']
+CONSUL_HOST = data['consul']['host']
+CONSUL_POST = data['consul']['port']
 logger.info("Read config from nacos " + f"{NACOS['Host']}:{NACOS['Port']}")

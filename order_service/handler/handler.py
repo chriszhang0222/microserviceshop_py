@@ -3,6 +3,9 @@ from order_service.proto import order_pb2, order_pb2_grpc
 from loguru import logger
 from order_service.model.model import *
 from google.protobuf import empty_pb2
+from common.register import consul
+from order_service.settings import settings
+from order_service.proto import goods_pb2, goods_pb2_grpc
 
 
 class OrderService(order_pb2_grpc.OrderServicer):
@@ -93,9 +96,9 @@ class OrderService(order_pb2_grpc.OrderServicer):
         rsp = order_pb2.OrderInfoDetailResponse()
         try:
             if request.userId:
-                order: OrderInfo = OrderInfo.get(OrderInfo.id==request.id,OrderInfo.user==request.userId)
+                order: OrderInfo = OrderInfo.get(OrderInfo.id == request.id, OrderInfo.user == request.userId)
             else:
-                order: OrderInfo = OrderInfo.get(OrderInfo.id==request.id)
+                order: OrderInfo = OrderInfo.get(OrderInfo.id == request.id)
             rsp.orderInfo = self.convert_order_into_response(order)
             order_goods = OrderGoods.select().where(OrderGoods.order == order.id)
             for order_good in order_goods:
@@ -120,4 +123,33 @@ class OrderService(order_pb2_grpc.OrderServicer):
         return empty_pb2.Empty()
 
     def CreateOrder(self, request, context):
+        goods_ids = []
+        goods_nums = {}
+        order_amount = 0
+        order_goods_list = []
+        for cart_item in ShoppingCart.select().where(ShoppingCart.user == request.userId, ShoppingCart.checked == True):
+            goods_ids.append(cart_item.goods)
+            goods_nums[cart_item.goods] = cart_item.nums
+        if not goods_ids:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("No item in shopping cart")
+            return order_pb2.OrderInfoResponse()
+
+        # query goods info from goods srv
+        register = consul.ConsulRegister(settings.CONSUL_HOST, settings.CONSUL_POST)
+        goods_srv_host, goods_srv_port = register.get_host_port(f'Service == "{settings.Goods_srv_name}"')
+        if not goods_srv_host or not goods_srv_port:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Goods service not available")
+            return order_pb2.OrderInfoResponse()
+        goods_channel = grpc.insecure_channel(f"{goods_srv_host}:{goods_srv_port}")
+        goods_stub = goods_pb2_grpc.GoodsStub(goods_channel)
+        goods_rsp = goods_stub.BatchGetGoods(goods_pb2.BatchGoodsIdInfo(id=goods_ids))
+        for good in goods_rsp.data:
+            order_amount += good.shopPrice * goods_nums[good.id]
+            order_goods = OrderGoods(goods=good.id, goods_name=good.name, goods_image=good.goodsFrontImage,
+                                     goods_price=good.shopPrice, nums=goods_nums[good.id])
+            order_goods_list.append(order_goods)
+
+
         return super().CreateOrder(request, context)
