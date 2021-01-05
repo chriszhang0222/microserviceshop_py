@@ -111,11 +111,11 @@ class GoodsServices(goods_pb2_grpc.GoodsServicer):
     @logger.catch
     def BatchGetGoods(self, request: goods_pb2.BatchGoodsIdInfo, context) -> goods_pb2.GoodsListResponse:
         rsp = goods_pb2.GoodsListResponse()
-        ids = request.id
-        goods = Goods.where(Goods.id.in_(ids))
+        ids = list(request.id)
+        goods = Goods.select().where(Goods.id.in_(ids))
         rsp.total = goods.count()
         for good in goods:
-            rsp.append(self.convert_model_to_message(good))
+            rsp.data.append(self.convert_model_to_message(good))
         return rsp
 
     @logger.catch

@@ -175,7 +175,7 @@ class OrderService(order_pb2_grpc.OrderServicer):
             inventory_channel = grpc.insecure_channel(f"{inventory_host}:{inventory_port}")
             inv_stub = inventory_pb2_grpc.InventoryStub(inventory_channel)
             try:
-                inv_stub.Sell(inventory_pb2.SellInfo(goods_info=goods_sell_info))
+                inv_stub.Sell(inventory_pb2.SellInfo(goodsInfo=goods_sell_info))
             except grpc.RpcError as e:
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details(str(e))
