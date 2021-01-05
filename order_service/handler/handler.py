@@ -195,7 +195,7 @@ class OrderService(order_pb2_grpc.OrderServicer):
                     order_goods.order = order.id
                 OrderGoods.bulk_create(order_goods_list)
 
-                ShoppingCart.delete().where(ShoppingCart.user == request.userId, ShoppingCart.checked == True)
+                ShoppingCart.delete().where(ShoppingCart.user == request.userId, ShoppingCart.checked == True).execute()
             except Exception as e:
                 txn.rollback()
                 context.set_code(grpc.StatusCode.INTERNAL)

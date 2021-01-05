@@ -47,4 +47,5 @@ Goods_srv_name = data['goods_srv']['name']
 Inventory_srv_name = data['inventory_srv']['name']
 CONSUL_HOST = data['consul']['host']
 CONSUL_POST = data['consul']['port']
+Service_name = data['service_name']
 logger.info("Read config from nacos " + f"{NACOS['Host']}:{NACOS['Port']}")
