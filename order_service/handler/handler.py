@@ -5,7 +5,7 @@ from order_service.model.model import *
 from google.protobuf import empty_pb2
 from common.register import consul
 from order_service.settings import settings
-from order_service.proto import goods_pb2, goods_pb2_grpc
+from order_service.proto import goods_pb2, goods_pb2_grpc, inventory_pb2, inventory_pb2_grpc
 
 
 class OrderService(order_pb2_grpc.OrderServicer):
@@ -144,12 +144,30 @@ class OrderService(order_pb2_grpc.OrderServicer):
             return order_pb2.OrderInfoResponse()
         goods_channel = grpc.insecure_channel(f"{goods_srv_host}:{goods_srv_port}")
         goods_stub = goods_pb2_grpc.GoodsStub(goods_channel)
-        goods_rsp = goods_stub.BatchGetGoods(goods_pb2.BatchGoodsIdInfo(id=goods_ids))
-        for good in goods_rsp.data:
-            order_amount += good.shopPrice * goods_nums[good.id]
-            order_goods = OrderGoods(goods=good.id, goods_name=good.name, goods_image=good.goodsFrontImage,
-                                     goods_price=good.shopPrice, nums=goods_nums[good.id])
-            order_goods_list.append(order_goods)
+        goods_sell_info = []
+        try:
+            goods_rsp = goods_stub.BatchGetGoods(goods_pb2.BatchGoodsIdInfo(id=goods_ids))
+            for good in goods_rsp.data:
+                order_amount += good.shopPrice * goods_nums[good.id]
+                order_goods = OrderGoods(goods=good.id, goods_name=good.name, goods_image=good.goodsFrontImage,
+                                         goods_price=good.shopPrice, nums=goods_nums[good.id])
+                order_goods_list.append(order_goods)
+                goods_sell_info.append(inventory_pb2.GoodsInvInfo(goodsId=good.id, num=goods_nums[good.id]))
+        except grpc.RpcError as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return order_pb2.OrderInfoResponse()
 
-
+        inventory_host, inventory_port = register.get_host_port(f'Service == "{settings.Inventory_srv_name}"')
+        if not inventory_host or not inventory_port:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Inventory service not available")
+        inventory_channel = grpc.insecure_channel(f"{inventory_host}:{inventory_port}")
+        inv_stub = inventory_pb2_grpc.InventoryStub(inventory_channel)
+        try:
+            inv_stub.Sell(inventory_pb2.SellInfo(goods_info=goods_sell_info))
+        except grpc.RpcError as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return order_pb2.OrderInfoResponse()
         return super().CreateOrder(request, context)
