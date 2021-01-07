@@ -21,7 +21,7 @@ class OrderTest:
 
     def create_cart_item(self):
         rsp = self.order_stub.CreateCartItem(order_pb2.CartItemRequest(
-            goodsId=422, userId=1, nums=1
+            goodsId=421, userId=2, nums=3
         ))
         print(rsp)
 
@@ -32,10 +32,15 @@ class OrderTest:
         )
         print(rsp)
 
+    def cart_list(self):
+        rsp = self.order_stub.CartItemList(order_pb2.UserInfo(id=2))
+        print(rsp)
+
+
     def order_list(self):
         rsp = self.order_stub.OrderList(order_pb2.OrderFilterRequest(userId=1))
         print(rsp)
 
 if __name__ == "__main__":
     order = OrderTest()
-    order.create_order()
+    order.cart_list()

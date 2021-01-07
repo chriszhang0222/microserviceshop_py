@@ -28,7 +28,7 @@ class OrderService(order_pb2_grpc.OrderServicer):
             item_rsp = order_pb2.ShopCartInfoResponse()
             item_rsp.id = item.id
             item_rsp.userId = item.user
-            item_rsp.goodsId = item.goodsId
+            item_rsp.goodsId = item.goods
             item_rsp.nums = item.nums
             items.checked = item.checked
             rsp.data.append(item_rsp)
@@ -172,6 +172,7 @@ class OrderService(order_pb2_grpc.OrderServicer):
             if not inventory_host or not inventory_port:
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details("Inventory service not available")
+                return order_pb2.OrderInfoResponse()
             inventory_channel = grpc.insecure_channel(f"{inventory_host}:{inventory_port}")
             inv_stub = inventory_pb2_grpc.InventoryStub(inventory_channel)
             try:

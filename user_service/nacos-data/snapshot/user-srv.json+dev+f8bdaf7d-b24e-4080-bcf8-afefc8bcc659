@@ -1,5 +1,6 @@
 {
     "service_name": "user-srv",
+    "host": "192.168.0.14",
     "mysql": {
         "db": "mxshop_user_srv",
         "host": "192.168.0.10",
