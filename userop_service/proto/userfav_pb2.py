@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z\007.;proto',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\ruserfav.proto\x1a\x1bgoogle/protobuf/empty.proto\"1\n\x0eUserFavRequest\x12\x0e\n\x06userId\x18\x01 \x01(\x05\x12\x0f\n\x07goodsId\x18\x02 \x01(\x05\"2\n\x0fUserFavResponse\x12\x0e\n\x06userId\x18\x01 \x01(\x05\x12\x0f\n\x07goodsId\x18\x02 \x01(\x05\"D\n\x13UserFavListResponse\x12\r\n\x05total\x18\x01 \x01(\x05\x12\x1e\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x10.UserFavResponse2\xec\x01\n\x07UserFav\x12\x33\n\nGetFavList\x12\x0f.UserFavRequest\x1a\x14.UserFavListResponse\x12\x35\n\nAddUserFav\x12\x0f.UserFavRequest\x1a\x16.google.protobuf.Empty\x12\x38\n\rDeleteUserFav\x12\x0f.UserFavRequest\x1a\x16.google.protobuf.Empty\x12;\n\x10GetUserFavDetail\x12\x0f.UserFavRequest\x1a\x16.google.protobuf.EmptyB\tZ\x07.;protob\x06proto3'
+  serialized_pb=b'\n\ruserfav.proto\x1a\x1bgoogle/protobuf/empty.proto\"1\n\x0eUserFavRequest\x12\x0e\n\x06userId\x18\x01 \x01(\x05\x12\x0f\n\x07goodsId\x18\x02 \x01(\x05\"2\n\x0fUserFavResponse\x12\x0e\n\x06userId\x18\x01 \x01(\x05\x12\x0f\n\x07goodsId\x18\x02 \x01(\x05\"D\n\x13UserFavListResponse\x12\r\n\x05total\x18\x01 \x01(\x05\x12\x1e\n\x04\x64\x61ta\x18\x02 \x03(\x0b\x32\x10.UserFavResponse\"\x1d\n\x0cUserFavExist\x12\r\n\x05\x65xist\x18\x01 \x01(\x08\x32\xe3\x01\n\x07UserFav\x12\x33\n\nGetFavList\x12\x0f.UserFavRequest\x1a\x14.UserFavListResponse\x12\x35\n\nAddUserFav\x12\x0f.UserFavRequest\x1a\x16.google.protobuf.Empty\x12\x38\n\rDeleteUserFav\x12\x0f.UserFavRequest\x1a\x16.google.protobuf.Empty\x12\x32\n\x10GetUserFavDetail\x12\x0f.UserFavRequest\x1a\r.UserFavExistB\tZ\x07.;protob\x06proto3'
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -143,10 +143,43 @@ _USERFAVLISTRESPONSE = _descriptor.Descriptor(
   serialized_end=217,
 )
 
+
+_USERFAVEXIST = _descriptor.Descriptor(
+  name='UserFavExist',
+  full_name='UserFavExist',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='exist', full_name='UserFavExist.exist', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=219,
+  serialized_end=248,
+)
+
 _USERFAVLISTRESPONSE.fields_by_name['data'].message_type = _USERFAVRESPONSE
 DESCRIPTOR.message_types_by_name['UserFavRequest'] = _USERFAVREQUEST
 DESCRIPTOR.message_types_by_name['UserFavResponse'] = _USERFAVRESPONSE
 DESCRIPTOR.message_types_by_name['UserFavListResponse'] = _USERFAVLISTRESPONSE
+DESCRIPTOR.message_types_by_name['UserFavExist'] = _USERFAVEXIST
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 UserFavRequest = _reflection.GeneratedProtocolMessageType('UserFavRequest', (_message.Message,), {
@@ -170,6 +203,13 @@ UserFavListResponse = _reflection.GeneratedProtocolMessageType('UserFavListRespo
   })
 _sym_db.RegisterMessage(UserFavListResponse)
 
+UserFavExist = _reflection.GeneratedProtocolMessageType('UserFavExist', (_message.Message,), {
+  'DESCRIPTOR' : _USERFAVEXIST,
+  '__module__' : 'userfav_pb2'
+  # @@protoc_insertion_point(class_scope:UserFavExist)
+  })
+_sym_db.RegisterMessage(UserFavExist)
+
 
 DESCRIPTOR._options = None
 
@@ -180,8 +220,8 @@ _USERFAV = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=220,
-  serialized_end=456,
+  serialized_start=251,
+  serialized_end=478,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetFavList',
@@ -219,7 +259,7 @@ _USERFAV = _descriptor.ServiceDescriptor(
     index=3,
     containing_service=None,
     input_type=_USERFAVREQUEST,
-    output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
+    output_type=_USERFAVEXIST,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-import userfav_pb2 as userfav__pb2
+from . import userfav_pb2 as userfav__pb2
 
 
 class UserFavStub(object):
@@ -33,7 +33,7 @@ class UserFavStub(object):
         self.GetUserFavDetail = channel.unary_unary(
                 '/UserFav/GetUserFavDetail',
                 request_serializer=userfav__pb2.UserFavRequest.SerializeToString,
-                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                response_deserializer=userfav__pb2.UserFavExist.FromString,
                 )
 
 
@@ -89,7 +89,7 @@ def add_UserFavServicer_to_server(servicer, server):
             'GetUserFavDetail': grpc.unary_unary_rpc_method_handler(
                     servicer.GetUserFavDetail,
                     request_deserializer=userfav__pb2.UserFavRequest.FromString,
-                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                    response_serializer=userfav__pb2.UserFavExist.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -165,6 +165,6 @@ class UserFav(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/UserFav/GetUserFavDetail',
             userfav__pb2.UserFavRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            userfav__pb2.UserFavExist.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
