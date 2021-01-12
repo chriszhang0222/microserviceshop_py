@@ -39,7 +39,7 @@ class BaseServer:
                                                        address=self.SERVICE_HOST, port=self.SERVICE_PORT,
                                                        tags=["mxshop"], check=check)
         if rsp:
-            logger.info('Registered at consul {}:{}'.format(self.CONSUL_HOST, self.CONSUL_PORT))
+            logger.info('{} Registered at consul {}:{}'.format(self.SERVICE_NAME, self.CONSUL_HOST, self.CONSUL_PORT))
         else:
             raise Exception('Failed to registered at consul ' + f"{self.CONSUL_HOST}:{self.CONSUL_PORT}")
 
