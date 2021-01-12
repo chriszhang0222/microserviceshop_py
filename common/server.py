@@ -21,7 +21,7 @@ class BaseServer:
         pass
 
     def serve(self):
-        pass
+        raise NotImplementedError
 
     def register(self):
         self.consul = consul.Consul(host=self.CONSUL_HOST, port=self.CONSUL_PORT)
