@@ -1,0 +1,17 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = ".;proto";
+
+service DataService{
+  rpc GetData(DataRequest) returns (DataResponse);
+}
+
+message DataRequest{
+  int32 id = 1;
+  string name = 2;
+}
+
+message DataResponse{
+  string content = 1;
+  int32 code = 2;
+}
