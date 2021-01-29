@@ -48,4 +48,7 @@ Inventory_srv_name = data['inventory_srv']['name']
 CONSUL_HOST = data['consul']['host']
 CONSUL_POST = data['consul']['port']
 Service_name = data['service_name']
+
+RocketMQ_HOST = data["rocketmq"]["host"]
+RocketMQ_PORT = data["rocketmq"]["port"]
 logger.info("Read config from nacos " + f"{NACOS['Host']}:{NACOS['Port']}")
