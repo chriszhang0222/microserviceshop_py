@@ -9,7 +9,7 @@ import environ
 import uuid
 from concurrent import futures
 from loguru import logger
-
+from rocketmq.client import PushConsumer, ConsumeStatus
 BASE_DIR = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 sys.path.insert(0, BASE_DIR)
 
@@ -48,7 +48,12 @@ class InventoryServiceServer(BaseServer):
         logger.info("Start Inventory Service at {}:{}".format(self.SERVICE_HOST, self.SERVICE_PORT))
         self.server.start()
         self.register()
+        consumer = PushConsumer("mxshop_inventory")
+        consumer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
+        consumer.subscribe("order_reback")
+        consumer.start()
         self.server.wait_for_termination()
+        consumer.shutdown()
 
 
 if __name__ == "__main__":
