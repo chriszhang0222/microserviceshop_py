@@ -61,7 +61,7 @@ class InventoryService(inventory_pb2_grpc.InventoryServicer):
 
     @logger.catch
     def Sell(self, request: inventory_pb2.SellInfo, context):
-        inv_history = InventoryHistory(order_sn=request.OrderSn)
+        inv_history = InventoryHistory(order_sn=request.orderSn)
         inv_detail = []
         with settings.DB.atomic() as txn:
             for item in request.goodsInfo:

@@ -147,6 +147,7 @@ class OrderService(order_pb2_grpc.OrderServicer):
     def local_execute(self, msg, user_args):
         msg_body = json.loads(msg.body.decode("utf-8"))
         order_sn = msg_body["orderSn"]
+        local_execute_dict[order_sn] = {}
         with settings.DB.atomic() as txn:
             goods_ids = []
             goods_nums = {}
