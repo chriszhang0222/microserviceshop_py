@@ -11,12 +11,44 @@ from google.protobuf import empty_pb2
 from common.register import consul
 from order_service.settings import settings
 from order_service.proto import goods_pb2, goods_pb2_grpc, inventory_pb2, inventory_pb2_grpc
-from rocketmq.client import TransactionStatus, TransactionMQProducer, Message, SendStatus
+from rocketmq.client import Producer, TransactionStatus, TransactionMQProducer, Message, SendStatus, ConsumeStatus
+
 
 def generate_order_sn(user_id):
     random_ins = Random()
     order_sn = f"{time.strftime('%Y%m%d%H%M%S')}{user_id}{random_ins.randint(10, 99)}"
     return order_sn
+
+
+def order_timeout(msg):
+    logger.info("超市消息接收时间 " + f"{datetime.now()}")
+    msg_body_str = msg.body.decode("utf-8")
+    msg_body = json.loads(msg_body_str)
+    order_sn = msg_body["orderSn"]
+    order = OrderInfo.get(OrderInfo.order_sn==order_sn)
+    with settings.DB.atomic() as txn:
+        try:
+            if order.status != "TRADE_SUCCESS":
+                order.status == "TRADE_CLOSED"
+                order.save()
+                msg = Message("order_reback")
+                msg.set_keys("mxshop")
+                msg.set_tags("reback")
+                msg.set_body(json.dumps({
+                    "orderSn": order_sn
+                }))
+                sync_producer = Producer("order_sender")
+                sync_producer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
+                sync_producer.start()
+                ret = sync_producer.send_sync(msg)
+                if ret.status != SendStatus.OK:
+                    raise Exception("发送失败")
+                sync_producer.shutdown()
+        except Exception as e:
+            logger.info(e)
+            txn.rollback()
+            return ConsumeStatus.RECONSUME_LATER
+    return ConsumeStatus.CONSUME_SUCCESS
 
 
 local_execute_dict = {}
@@ -229,6 +261,22 @@ class OrderService(order_pb2_grpc.OrderServicer):
                         "total": order.order_amount
                     }
                 }
+                #发送延时消息
+                msg = Message("order_timeout")
+                msg.set_delay_time_level(16)
+                msg.set_keys("imooc")
+                msg.set_tags("cancel")
+                msg.set_body(json.dumps({
+                    "orderSn": order_sn
+                }))
+                sync_producer = Producer("cancel")
+                sync_producer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
+                sync_producer.start()
+                ret = sync_producer.send_sync(msg)
+                if ret.status != SendStatus.OK:
+                    raise Exception("延时消息发送失败")
+                logger.info("发送延时消息时间" + datetime.now())
+                sync_producer.shutdown()
             except Exception as e:
                 txn.rollback()
                 local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNA

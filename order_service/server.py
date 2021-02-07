@@ -14,13 +14,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 from order_service.proto import order_pb2_grpc
-from order_service.handler.handler import OrderService
+from order_service.handler.handler import OrderService, order_timeout
 from order_service.settings import settings
 from common.server import BaseServer
 from common.grpc_health.v1 import health_pb2, health_pb2_grpc
 from common.grpc_health.v1 import health
-
-
+from rocketmq.client import PushConsumer
 class OrderServiceServer(BaseServer):
     SERVICE_NAME = 'order-srv'
 
@@ -48,7 +47,14 @@ class OrderServiceServer(BaseServer):
         logger.info("Start Order Service at {}:{}".format(self.SERVICE_HOST, self.SERVICE_PORT))
         self.server.start()
         self.register()
+
+        #监听超时订单消息
+        consumer = PushConsumer("mxshop_order")
+        consumer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
+        consumer.subscribe("order_timeout", order_timeout)
+        consumer.start()
         self.server.wait_for_termination()
+        consumer.shutdown()
 
 
 if __name__ == "__main__":
