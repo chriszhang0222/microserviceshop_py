@@ -136,7 +136,13 @@ class OrderService(order_pb2_grpc.OrderServicer):
 
     @logger.catch
     def check_callback(self, msg):
-        pass
+        msg_body = json.loads(msg.body.decode("utf-8"))
+        order_sn = msg_body["orderSn"]
+        orders = OrderInfo.select().where(OrderInfo.order_sn==order_sn)
+        if orders:
+            return TransactionStatus.ROLLBACK
+        else:
+            return TransactionStatus.COMMIT
 
     def local_execute(self, msg, user_args):
         msg_body = json.loads(msg.body.decode("utf-8"))
@@ -192,7 +198,11 @@ class OrderService(order_pb2_grpc.OrderServicer):
             except grpc.RpcError as e:
                 local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNAL
                 local_execute_dict[order_sn]["detail"] = str(e)
-                return TransactionStatus.ROLLBACK
+                err_code = e.code()
+                if err_code == grpc.StatusCode.UNKNOWN or grpc.StatusCode.DEADLINE_EXCEEDED:
+                    return TransactionStatus.COMMIT
+                else:
+                    return TransactionStatus.ROLLBACK
 
             try:
                 order = OrderInfo()
@@ -209,11 +219,20 @@ class OrderService(order_pb2_grpc.OrderServicer):
                 OrderGoods.bulk_create(order_goods_list)
 
                 ShoppingCart.delete().where(ShoppingCart.user == msg_body["userId"], ShoppingCart.checked == True).execute()
+                local_execute_dict[order_sn] = {
+                    "code": grpc.StatusCode.OK,
+                    "detail": "Create order succeeded",
+                    "order": {
+                        "id": order.id,
+                        "orderSn": order_sn,
+                        "total": order.order_amount
+                    }
+                }
             except Exception as e:
                 txn.rollback()
                 local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNA
                 local_execute_dict[order_sn]["detail"] = str(e)
-                return TransactionStatus.ROLLBACK
+                return TransactionStatus.COMMIT
             return TransactionStatus.ROLLBACK
 
     def CreateOrder(self, request, context):
@@ -243,7 +262,15 @@ class OrderService(order_pb2_grpc.OrderServicer):
 
         while True:
             if order_sn in local_execute_dict:
-                pass
+                context.set_code(local_execute_dict[order_sn]["code"])
+                context.set_details(local_execute_dict[order_sn]["detail"])
+                producer.shutdown()
+                if local_execute_dict[order_sn]["code"] == grpc.StatusCode.OK:
+                    return order_pb2.OrderInfoResponse(id=local_execute_dict[order_sn]["order"]["id"],
+                                                       orderSn=order_sn,
+                                                       total=local_execute_dict[order_sn]["order"]["total"])
+                else:
+                    return order_pb2.OrderInfoResponse()
             time.sleep(0.1)
 
 
