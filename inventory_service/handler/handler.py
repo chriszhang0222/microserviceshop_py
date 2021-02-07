@@ -6,6 +6,11 @@ from loguru import logger
 from common.lock.redis_lock import Lock
 
 
+def reback_inv(msg):
+    #通过ordersn 确定库存归还
+    pass
+
+
 class InventoryService(inventory_pb2_grpc.InventoryServicer):
     @logger.catch
     def SetInv(self, request: inventory_pb2.GoodsInvInfo, context):

@@ -19,7 +19,7 @@ from inventory_service.settings import settings
 from common.server import BaseServer
 from common.grpc_health.v1 import health_pb2, health_pb2_grpc
 from common.grpc_health.v1 import health
-
+from inventory_service.handler.handler import reback_inv
 
 class InventoryServiceServer(BaseServer):
     SERVICE_NAME = "inventory-srv"
@@ -50,7 +50,7 @@ class InventoryServiceServer(BaseServer):
         self.register()
         consumer = PushConsumer("mxshop_inventory")
         consumer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
-        consumer.subscribe("order_reback")
+        consumer.subscribe("order_reback", reback_inv)
         consumer.start()
         self.server.wait_for_termination()
         consumer.shutdown()
