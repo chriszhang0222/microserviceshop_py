@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z\007.;proto',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0finventory.proto\x1a\x1bgoogle/protobuf/empty.proto\",\n\x0cGoodsInvInfo\x12\x0f\n\x07goodsId\x18\x01 \x01(\x05\x12\x0b\n\x03num\x18\x02 \x01(\x05\",\n\x08SellInfo\x12 \n\tgoodsInfo\x18\x01 \x03(\x0b\x32\r.GoodsInvInfo2\xbf\x01\n\tInventory\x12/\n\x06SetInv\x12\r.GoodsInvInfo\x1a\x16.google.protobuf.Empty\x12)\n\tInvDetail\x12\r.GoodsInvInfo\x1a\r.GoodsInvInfo\x12)\n\x04Sell\x12\t.SellInfo\x1a\x16.google.protobuf.Empty\x12+\n\x06Reback\x12\t.SellInfo\x1a\x16.google.protobuf.EmptyB\tZ\x07.;protob\x06proto3'
+  serialized_pb=b'\n\x0finventory.proto\x1a\x1bgoogle/protobuf/empty.proto\",\n\x0cGoodsInvInfo\x12\x0f\n\x07goodsId\x18\x01 \x01(\x05\x12\x0b\n\x03num\x18\x02 \x01(\x05\"=\n\x08SellInfo\x12 \n\tgoodsInfo\x18\x01 \x03(\x0b\x32\r.GoodsInvInfo\x12\x0f\n\x07orderSn\x18\x02 \x01(\t2\xbf\x01\n\tInventory\x12/\n\x06SetInv\x12\r.GoodsInvInfo\x1a\x16.google.protobuf.Empty\x12)\n\tInvDetail\x12\r.GoodsInvInfo\x1a\r.GoodsInvInfo\x12)\n\x04Sell\x12\t.SellInfo\x1a\x16.google.protobuf.Empty\x12+\n\x06Reback\x12\t.SellInfo\x1a\x16.google.protobuf.EmptyB\tZ\x07.;protob\x06proto3'
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,])
 
@@ -81,6 +81,13 @@ _SELLINFO = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='orderSn', full_name='SellInfo.orderSn', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -94,7 +101,7 @@ _SELLINFO = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=94,
-  serialized_end=138,
+  serialized_end=155,
 )
 
 _SELLINFO.fields_by_name['goodsInfo'].message_type = _GOODSINVINFO
@@ -126,8 +133,8 @@ _INVENTORY = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=141,
-  serialized_end=332,
+  serialized_start=158,
+  serialized_end=349,
   methods=[
   _descriptor.MethodDescriptor(
     name='SetInv',
