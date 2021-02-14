@@ -2,6 +2,8 @@ import json
 
 import grpc
 import time
+
+from common.grpc_interceptor.grpc_retry import RetryInterceptor
 from order_service.proto import order_pb2, order_pb2_grpc
 from loguru import logger
 from random import Random
@@ -225,6 +227,7 @@ class OrderService(order_pb2_grpc.OrderServicer):
                 local_execute_dict[order_sn]["detail"] = "Inventory service not available"
                 return TransactionStatus.ROLLBACK
             inventory_channel = grpc.insecure_channel(f"{inventory_host}:{inventory_port}")
+            inventory_channel = grpc.intercept_channel(inventory_channel, RetryInterceptor)
             inv_stub = inventory_pb2_grpc.InventoryStub(inventory_channel)
             try:
                 inv_stub.Sell(inventory_pb2.SellInfo(goodsInfo=goods_sell_info, orderSn=order_sn))
