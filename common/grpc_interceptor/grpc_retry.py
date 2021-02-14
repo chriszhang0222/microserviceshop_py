@@ -7,7 +7,7 @@ class RetryInterceptor(UnaryUnaryClientInterceptor, UnaryStreamClientInterceptor
 
     def __init__(self, max_retries=3, retry_codes=None, retry_timeout_ms=100, retry_jitter_ms=20):
         if retry_codes is None:
-            retry_codes = [StatusCode.UNAVAILABLE, StatusCode.DEADLINE_EXCEEDED]
+            retry_codes = [StatusCode.UNAVAILABLE, StatusCode.DEADLINE_EXCEEDED, StatusCode.UNKNOWN]
         self.max_retries = max_retries
         self.retry_codes = retry_codes
         self.retry_timeout_ms = retry_timeout_ms
