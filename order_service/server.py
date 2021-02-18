@@ -20,6 +20,9 @@ from common.server import BaseServer
 from common.grpc_health.v1 import health_pb2, health_pb2_grpc
 from common.grpc_health.v1 import health
 from rocketmq.client import PushConsumer
+from grpc_opentracing import open_tracing_server_interceptor
+from jaeger_client import Config
+from grpc_opentracing.grpcext import intercept_server
 class OrderServiceServer(BaseServer):
     SERVICE_NAME = 'order-srv'
 
@@ -37,7 +40,25 @@ class OrderServiceServer(BaseServer):
         sys.exit(0)
 
     def serve(self):
+        config = Config(
+            config={  # usually read from some yaml config
+                'sampler': {
+                    'type': 'const',  # 全部
+                    'param': 1,  # 1 开启全部采样 0 表示关闭全部采样
+                },
+                'local_agent': {
+                    'reporting_host': '192.168.0.14',
+                    'reporting_port': '6831',
+                },
+                'logging': True,
+            },
+            service_name='order-srv',
+            validate=True,
+        )
+        tracer = config.initialize_tracer()
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=40))
+        tracing_interceptor = open_tracing_server_interceptor(tracer)
+        self.server = intercept_server(self.server, tracing_interceptor)
         order_pb2_grpc.add_OrderServicer_to_server(OrderService(), self.server)
         health_servicer = health.HealthServicer()
         health_pb2_grpc.add_HealthServicer_to_server(health_servicer, self.server)
