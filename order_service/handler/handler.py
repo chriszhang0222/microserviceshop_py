@@ -2,7 +2,7 @@ import json
 
 import grpc
 import time
-
+import opentracing
 from common.grpc_interceptor.grpc_retry import RetryInterceptor
 from order_service.proto import order_pb2, order_pb2_grpc
 from loguru import logger
@@ -182,112 +182,121 @@ class OrderService(order_pb2_grpc.OrderServicer):
         msg_body = json.loads(msg.body.decode("utf-8"))
         order_sn = msg_body["orderSn"]
         local_execute_dict[order_sn] = {}
+        parent_span = local_execute_dict[msg_body["parent_span_id"]]
+
+
         with settings.DB.atomic() as txn:
             goods_ids = []
             goods_nums = {}
             order_amount = 0
             order_goods_list = []
-            for cart_item in ShoppingCart.select().where(ShoppingCart.user == msg_body["userId"], ShoppingCart.checked == True):
-                goods_ids.append(cart_item.goods)
-                goods_nums[cart_item.goods] = cart_item.nums
-            if not goods_ids:
-                local_execute_dict[order_sn]["code"] = grpc.StatusCode.NOT_FOUND
-                local_execute_dict[order_sn]["detail"] = "No item in shopping cart"
-                return TransactionStatus.ROLLBACK
-
-            # query goods info from goods srv
-            register = consul.ConsulRegister(settings.CONSUL_HOST, settings.CONSUL_POST)
-            goods_srv_host, goods_srv_port = register.get_host_port(f'Service == "{settings.Goods_srv_name}"')
-            if not goods_srv_host or not goods_srv_port:
-                local_execute_dict[order_sn]["code"] = grpc.StatusCode.NOT_FOUND
-                local_execute_dict[order_sn]["detail"] = "Goods service not available"
-                return TransactionStatus.ROLLBACK
-
-            goods_channel = grpc.insecure_channel(f"{goods_srv_host}:{goods_srv_port}")
-            goods_stub = goods_pb2_grpc.GoodsStub(goods_channel)
-            goods_sell_info = []
-            try:
-                goods_rsp = goods_stub.BatchGetGoods(goods_pb2.BatchGoodsIdInfo(id=goods_ids))
-                for good in goods_rsp.data:
-                    order_amount += good.shopPrice * goods_nums[good.id]
-                    order_goods = OrderGoods(goods=good.id, goods_name=good.name, goods_image=good.goodsFrontImage,
-                                             goods_price=good.shopPrice, nums=goods_nums[good.id])
-                    order_goods_list.append(order_goods)
-                    goods_sell_info.append(inventory_pb2.GoodsInvInfo(goodsId=good.id, num=goods_nums[good.id]))
-            except grpc.RpcError as e:
-                local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNAL
-                local_execute_dict[order_sn]["detail"] = str(e)
-                return TransactionStatus.ROLLBACK
-            # prepare half message
-
-
-            inventory_host, inventory_port = register.get_host_port(f'Service == "{settings.Inventory_srv_name}"')
-            if not inventory_host or not inventory_port:
-                local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNA
-                local_execute_dict[order_sn]["detail"] = "Inventory service not available"
-                return TransactionStatus.ROLLBACK
-            inventory_channel = grpc.insecure_channel(f"{inventory_host}:{inventory_port}")
-            inventory_channel = grpc.intercept_channel(inventory_channel, RetryInterceptor)
-            inv_stub = inventory_pb2_grpc.InventoryStub(inventory_channel)
-            try:
-                inv_stub.Sell(inventory_pb2.SellInfo(goodsInfo=goods_sell_info, orderSn=order_sn))
-            except grpc.RpcError as e:
-                local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNAL
-                local_execute_dict[order_sn]["detail"] = str(e)
-                err_code = e.code()
-                if err_code == grpc.StatusCode.UNKNOWN or grpc.StatusCode.DEADLINE_EXCEEDED:
-                    return TransactionStatus.COMMIT
-                else:
+            tracer = opentracing.global_tracer()
+            with tracer.start_span("select_shopcart") as select_shopchart_span:
+                for cart_item in ShoppingCart.select().where(ShoppingCart.user == msg_body["userId"], ShoppingCart.checked == True):
+                    goods_ids.append(cart_item.goods)
+                    goods_nums[cart_item.goods] = cart_item.nums
+                if not goods_ids:
+                    local_execute_dict[order_sn]["code"] = grpc.StatusCode.NOT_FOUND
+                    local_execute_dict[order_sn]["detail"] = "No item in shopping cart"
                     return TransactionStatus.ROLLBACK
 
-            try:
-                order = OrderInfo()
-                order.user = msg_body["userId"]
-                order.order_sn = order_sn
-                order.order_amount = order_amount
-                order.address = msg_body["address"]
-                order.signer_name = msg_body["name"]
-                order.singer_mobile = msg_body["mobile"]
-                order.post = msg_body["post"]
-                order.save()
-                for order_goods in order_goods_list:
-                    order_goods.order = order.id
-                OrderGoods.bulk_create(order_goods_list)
+            # query goods info from goods srv
+            with tracer.start_span("query_goods", child_of=parent_span) as query_goods_span:
+                register = consul.ConsulRegister(settings.CONSUL_HOST, settings.CONSUL_POST)
+                goods_srv_host, goods_srv_port = register.get_host_port(f'Service == "{settings.Goods_srv_name}"')
+                if not goods_srv_host or not goods_srv_port:
+                    local_execute_dict[order_sn]["code"] = grpc.StatusCode.NOT_FOUND
+                    local_execute_dict[order_sn]["detail"] = "Goods service not available"
+                    return TransactionStatus.ROLLBACK
 
-                ShoppingCart.delete().where(ShoppingCart.user == msg_body["userId"], ShoppingCart.checked == True).execute()
-                local_execute_dict[order_sn] = {
-                    "code": grpc.StatusCode.OK,
-                    "detail": "Create order succeeded",
-                    "order": {
-                        "id": order.id,
-                        "orderSn": order_sn,
-                        "total": order.order_amount
+                goods_channel = grpc.insecure_channel(f"{goods_srv_host}:{goods_srv_port}")
+                goods_stub = goods_pb2_grpc.GoodsStub(goods_channel)
+                goods_sell_info = []
+                try:
+                    goods_rsp = goods_stub.BatchGetGoods(goods_pb2.BatchGoodsIdInfo(id=goods_ids))
+                    for good in goods_rsp.data:
+                        order_amount += good.shopPrice * goods_nums[good.id]
+                        order_goods = OrderGoods(goods=good.id, goods_name=good.name, goods_image=good.goodsFrontImage,
+                                                 goods_price=good.shopPrice, nums=goods_nums[good.id])
+                        order_goods_list.append(order_goods)
+                        goods_sell_info.append(inventory_pb2.GoodsInvInfo(goodsId=good.id, num=goods_nums[good.id]))
+                except grpc.RpcError as e:
+                    local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNAL
+                    local_execute_dict[order_sn]["detail"] = str(e)
+                    return TransactionStatus.ROLLBACK
+            # prepare half message
+
+            with tracer.start_span("query_inv", child_of=parent_span) as query_inv_span:
+                inventory_host, inventory_port = register.get_host_port(f'Service == "{settings.Inventory_srv_name}"')
+                if not inventory_host or not inventory_port:
+                    local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNA
+                    local_execute_dict[order_sn]["detail"] = "Inventory service not available"
+                    return TransactionStatus.ROLLBACK
+                inventory_channel = grpc.insecure_channel(f"{inventory_host}:{inventory_port}")
+                inventory_channel = grpc.intercept_channel(inventory_channel, RetryInterceptor)
+                inv_stub = inventory_pb2_grpc.InventoryStub(inventory_channel)
+                try:
+                    inv_stub.Sell(inventory_pb2.SellInfo(goodsInfo=goods_sell_info, orderSn=order_sn))
+                except grpc.RpcError as e:
+                    local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNAL
+                    local_execute_dict[order_sn]["detail"] = str(e)
+                    err_code = e.code()
+                    if err_code == grpc.StatusCode.UNKNOWN or grpc.StatusCode.DEADLINE_EXCEEDED:
+                        return TransactionStatus.COMMIT
+                    else:
+                        return TransactionStatus.ROLLBACK
+
+            with tracer.start_span("insert_order", child_of=parent_span) as insert_order_span:
+                try:
+                    order = OrderInfo()
+                    order.user = msg_body["userId"]
+                    order.order_sn = order_sn
+                    order.order_amount = order_amount
+                    order.address = msg_body["address"]
+                    order.signer_name = msg_body["name"]
+                    order.singer_mobile = msg_body["mobile"]
+                    order.post = msg_body["post"]
+                    order.save()
+                    for order_goods in order_goods_list:
+                        order_goods.order = order.id
+                    OrderGoods.bulk_create(order_goods_list)
+
+                    ShoppingCart.delete().where(ShoppingCart.user == msg_body["userId"], ShoppingCart.checked == True).execute()
+                    local_execute_dict[order_sn] = {
+                        "code": grpc.StatusCode.OK,
+                        "detail": "Create order succeeded",
+                        "order": {
+                            "id": order.id,
+                            "orderSn": order_sn,
+                            "total": order.order_amount
+                        }
                     }
-                }
-                #发送延时消息
-                msg = Message("order_timeout")
-                msg.set_delay_time_level(16)
-                msg.set_keys("imooc")
-                msg.set_tags("cancel")
-                msg.set_body(json.dumps({
-                    "orderSn": order_sn
-                }))
-                sync_producer = Producer("cancel")
-                sync_producer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
-                sync_producer.start()
-                ret = sync_producer.send_sync(msg)
-                if ret.status != SendStatus.OK:
-                    raise Exception("延时消息发送失败")
-                logger.info("发送延时消息时间" + datetime.now())
-                sync_producer.shutdown()
-            except Exception as e:
-                txn.rollback()
-                local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNA
-                local_execute_dict[order_sn]["detail"] = str(e)
-                return TransactionStatus.COMMIT
+                    #发送延时消息
+                    msg = Message("order_timeout")
+                    msg.set_delay_time_level(16)
+                    msg.set_keys("imooc")
+                    msg.set_tags("cancel")
+                    msg.set_body(json.dumps({
+                        "orderSn": order_sn
+                    }))
+                    sync_producer = Producer("cancel")
+                    sync_producer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
+                    sync_producer.start()
+                    ret = sync_producer.send_sync(msg)
+                    if ret.status != SendStatus.OK:
+                        raise Exception("延时消息发送失败")
+                    logger.info("发送延时消息时间" + datetime.now())
+                    sync_producer.shutdown()
+                except Exception as e:
+                    txn.rollback()
+                    local_execute_dict[order_sn]["code"] = grpc.StatusCode.INTERNA
+                    local_execute_dict[order_sn]["detail"] = str(e)
+                    return TransactionStatus.COMMIT
             return TransactionStatus.ROLLBACK
 
     def CreateOrder(self, request, context):
+        parent_span = context.get_active_span()
+        local_execute_dict[parent_span.context.span_id] = parent_span
         producer = TransactionMQProducer(group_id="mxshop", checker_callback=self.check_callback)
         producer.set_name_server_address(f"{settings.RocketMQ_HOST}:{settings.RocketMQ_PORT}")
         producer.start()
@@ -302,7 +311,8 @@ class OrderService(order_pb2_grpc.OrderServicer):
             "address": request.address,
             "name": request.name,
             "mobile": request.mobile,
-            "post": request.post
+            "post": request.post,
+            "parent_span_id": parent_span.context.span_id
         }
         msg.set_body(json.dumps(msg_body))
         ret = producer.send_message_in_transaction(msg, self.local_execute, user_args=None)
