@@ -76,6 +76,13 @@ class OrderGoods(BaseModel):
     nums = IntegerField(default=0)
 
 
+class OrderHistory(BaseModel):
+    order_id = IntegerField()
+    order_sn = CharField(max_length=20, default="")
+    user = IntegerField()
+    addr = CharField(max_length=200, default="")
+
+
 if __name__ == "__main__":
     settings.DB.create_tables([ShoppingCart, OrderGoods, OrderInfo])
 
